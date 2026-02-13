@@ -2,7 +2,7 @@ use crate::templates::*;
 use std::fs;
 use std::path::Path;
 
-const CORE_VERSION: &str = env!("MURGAMU_CORE_VERSION");
+const CORE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct ProjectGenerator {
 	project_name: String,

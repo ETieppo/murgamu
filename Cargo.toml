@@ -1,6 +1,6 @@
 [package]
 name = "murgamu"
-version = "0.7.5"
+version.workspace = true
 edition = "2021"
 description = "A NestJS-inspired web framework for Rust"
 repository = "https://github.com/etieppo/murgamu"
@@ -10,6 +10,9 @@ categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 
 [workspace]
 members = ["cli", "macros"]
+
+[workspace.package]
+version = "0.7.5"
 
 [lib]
 name = "murgamu"

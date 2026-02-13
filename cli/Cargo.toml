@@ -1,6 +1,6 @@
 [package]
 name = "mur"
-version = "0.1.6"
+version.workspace = true
 edition = "2024"
 description = "Command line tool for Murgamü"
 repository = "https://github.com/etieppo/murgamu"
