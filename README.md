@@ -13,3 +13,13 @@ It became a public API mainly because it allows me to manage dependencies more e
 I recommend using Actix, Axum, Ntex or Rocket instead — they provide validated features that efficiently guarantee application stability.
 The framework looks unusual compared to common Rust paradigms — this is intentional. The goal is to enforce dependency injection and to be opinionated about how code is written and structured. Rust itself is strict, but not strict enough in some areas.
 There are still parts I haven't fully mastered. You may encounter patterns that allow improper thread usage or dependency sharing between modules. These are cases I still don't fully understand how to safely isolate. It will require time and refactoring.
+
+# How do I use?
+you need to have rust installed [rust-lang.org](https://rust-lang.org/tools/install/)
+then
+
+```bash
+cargo install mur
+mur new <project name>
+mur dev <project name> # or enter and run without args
+```

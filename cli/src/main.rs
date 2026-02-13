@@ -41,7 +41,10 @@ enum Commands {
 		about = "Run project with hot reload",
 		long_about = "Starts development mode using cargo-watch for automatic rebuild and restart"
 	)]
-	Dev,
+	Dev {
+		#[arg(value_name = "DIR")]
+		dir: Option<String>,
+	},
 }
 
 fn main() {
@@ -59,9 +62,9 @@ fn main() {
 
 	let result = match command {
 		Commands::New { name } => execute(name),
-		Commands::Dev => {
+		Commands::Dev { dir } => {
 			ensure_cargo_watch().expect("[ERROR]: to ensure cargo watch");
-			dev_command()
+			dev_command(dir)
 		}
 	};
 
