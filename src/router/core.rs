@@ -12,6 +12,8 @@ use hyper::{Request, Response, StatusCode};
 use std::collections::HashMap;
 use std::sync::Arc;
 
+const PAPIRUS_FILE_CONTENT: &str = include_str!("../../art/router.ans");
+
 pub struct MurRouter {
 	pub(crate) routes_by_method: HashMap<String, Vec<MurRouteEntry>>,
 	pub(crate) global_guards: Vec<Arc<dyn MurGuard>>,
@@ -199,10 +201,100 @@ impl MurRouter {
 	}
 
 	pub fn print_routes(&self) {
-		println!("\n📍 Registered routes:");
-		for info in &self.route_info {
-			println!("  {} {} -> {}", info.method, info.path, info.controller);
+		const THRESHOLD: usize = 22;
+		const END_THRESHOLD: usize = 18;
+		const START_ROUTES_AT: usize = 3;
+		const PAPIRUS_SIDE: [&str; 8] = [
+			"     ,d' ",
+			"     8'  ",
+			"     8,  ",
+			"     `b, ",
+			"      `b,",
+			"      `8 ",
+			"      8  ",
+			"    ,8   ",
+		];
+		let mut routes = Vec::new();
+		let mut max_width = 0;
+		let mut idx = 0;
+
+		for info in self.route_info() {
+			let size = info.controller.len() + info.method.len() + info.path.len();
+			if size > max_width {
+				max_width = size;
+			}
+			routes.push((
+				info.method.clone(),
+				info.path.clone(),
+				info.controller.clone(),
+				size,
+			));
 		}
+
+		println!(
+			"     ,Yaaa{:a<w$}dbb,    ",
+			"a",
+			w = max_width - END_THRESHOLD
+		);
+		println!("   ,d\"{:w$}  a     d", "", w = max_width - END_THRESHOLD);
+		println!(
+			"   p\"     {:^w$} i      ,d ",
+			"ROUTER",
+			w = (max_width / 2) + END_THRESHOLD - 10
+		);
+		println!("    8l  {:w$}L,   ,d'  ", "", w = max_width - END_THRESHOLD);
+		println!(
+			"    `Yaaa{:a<w$}dbP\"    ",
+			"a",
+			w = max_width - END_THRESHOLD
+		);
+
+		for _ in 0..START_ROUTES_AT {
+			println!(
+				"{}{:w$}{}",
+				PAPIRUS_SIDE[idx],
+				"",
+				PAPIRUS_SIDE[idx],
+				w = max_width - THRESHOLD
+			);
+			idx = (idx + 1) % PAPIRUS_SIDE.len();
+		}
+
+		for (method, path, controller, size) in routes {
+			let last = controller.split("::").last().unwrap_or("--");
+			println!(
+				"{}    - {} {} -> {} {:w$}{}",
+				PAPIRUS_SIDE[idx],
+				method,
+				path,
+				last,
+				"",
+				PAPIRUS_SIDE[idx],
+				w = max_width - size
+			);
+			idx = (idx + 1) % PAPIRUS_SIDE.len();
+		}
+
+		while idx < PAPIRUS_SIDE.len() {
+			println!(
+				"{}{:w$}{}",
+				PAPIRUS_SIDE[idx],
+				"",
+				PAPIRUS_SIDE[idx],
+				w = max_width - THRESHOLD
+			);
+			idx += 1;
+		}
+
+		println!(
+			" ,aadb{:a<w$}aaaaa,d'   8",
+			"a",
+			w = max_width - THRESHOLD - 4
+		);
+		println!(",d\"{:w$}a      d", "", w = max_width - END_THRESHOLD);
+		println!("p\" {:w$}\"i      ,d ", "", w = max_width - END_THRESHOLD);
+		println!(" 8l  {:w$}L,   ,d'  ", "", w = max_width - END_THRESHOLD);
+		println!(" `Yaaa{:a<w$}dbP\"    ", "a", w = max_width - END_THRESHOLD);
 		println!();
 	}
 

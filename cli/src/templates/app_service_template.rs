@@ -1,23 +1,39 @@
-pub const SERVICE_TEMPLATE: &str = r#"use murgamu::prelude::*;
-use crate::mods::app::models::user_props::UserProps;
+pub const SERVICE_TEMPLATE: &str = r#"use super::models::user_props::UserProps;
+use crate::InjectNameService;
+use murgamu::prelude::*;
 
 #[service]
-pub struct AppService;
+pub struct AppService {
+	injected_name_service: Arc<InjectNameService>,
+}
 
 impl AppService {
-  pub fn new() -> Self {
-    Self
-  }
+	pub fn new(injected_name_service: Arc<InjectNameService>) -> Self {
+		Self {
+			injected_name_service,
+		}
+	}
 
-  pub fn greet(&self, name: String) -> String {
-    format!("Hello, {}! Welcome to Murgamü.", name)
-  }
+	pub fn greet(&self) -> Result<String, MurError> {
+		let name = self.injected_name_service.get_name()?;
+		Ok(format!("Hello, {}! Welcome to Murgamü.", name))
+	}
 
-  pub fn get_user(&self, id: u32) -> UserProps {
-    UserProps {
-      id,
-      username: String::from("Murgamü"),
-    }
-  }
+	pub fn get_user(&self, id: u32) -> UserProps {
+		if id == 1 {
+			UserProps {
+				id,
+				username: String::from("Murgamü"),
+			}
+		} else {
+			UserProps {
+				id,
+				username: self
+					.injected_name_service
+					.get_name()
+					.expect("Error getting project name"),
+			}
+		}
+	}
 }
 "#;

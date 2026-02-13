@@ -1,8 +1,8 @@
 [package]
 name = "murgamu"
-version = "0.7.3"
+version = "0.7.4"
 edition = "2021"
-description = "Murgamü is an NestJS-inspired web framework for Rust"
+description = "A NestJS-inspired web framework for Rust"
 repository = "https://github.com/etieppo/murgamu"
 license = "LGPL-3.0-or-later"
 keywords = ["framework", "http", "nestjs", "server", "web"]

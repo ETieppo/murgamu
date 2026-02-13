@@ -1,5 +1,6 @@
-pub const CONTROLLER_TEMPLATE: &str = r#"use murgamu::prelude::*;
-use crate::mods::app::AppService;
+pub const CONTROLLER_TEMPLATE: &str = r#"use crate::mods::app::AppService;
+use murgamu::Param;
+use murgamu::prelude::*;
 
 #[derive(Clone)]
 pub struct AppController {
@@ -14,21 +15,21 @@ impl AppController {
 
 	#[get("/")]
 	async fn index(&self) -> MurRes {
-		let p_name = mur_env("CARGO_PKG_NAME")?;
-		mur_json!(self.service.greet(p_name))
+		mur_json!(self.service.greet()?)
 	}
 
 	#[get("/user/:id")]
 	async fn get_user(&self, id: Param<u32>) -> MurRes {
-		mur_json!(self.service.get_user(*id)) // here you can use id.0 or id.into_inner() too
+		// here you can use id.0 or id.into_inner() too
+		mur_json!(self.service.get_user(*id))
 	}
 
 	/// you can also use queries
 	#[get("/query")]
 	async fn greet(&self, query: MurQuery<GreetQuery>) -> MurRes {
 		let name = query.name.as_deref().unwrap_or("Guest");
-		let greeting = self.service.greet(name.to_string());
-		mur_json!({ "greeting": greeting })
+		let greeting = self.service.greet()?;
+		mur_json!({"greeting": greeting,  "name": name })
 	}
 }
 

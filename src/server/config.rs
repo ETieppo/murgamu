@@ -27,7 +27,7 @@ impl Default for MurServerConfig {
 			graceful_shutdown: true,
 			shutdown_timeout: Duration::from_secs(30),
 			enable_logging: true,
-			server_name: String::from("Murgamu"),
+			server_name: String::from("Murgamü"),
 			enable_cors: false,
 			cors_origins: vec![String::from("*")],
 			tls: None,

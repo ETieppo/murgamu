@@ -16,8 +16,8 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 	name = "mur",
 	author = "E.Tieppo",
 	version = VERSION,
-	about = "🚀 Murgamu CLI",
-	long_about = "Murgamu CLI is a command-line tool for creating and managing Murgamu projects.\nIt provides a modular architecture for building scalable web applications in Rust. You can use it for hot reload too",
+	about = "🚀 Murgamü CLI",
+	long_about = "Murgamü CLI is a command-line tool for creating and managing Murgamü projects.\nIt provides a modular architecture for building scalable web applications in Rust. You can use it for hot reload too",
 	    disable_version_flag = true
 )]
 struct Cli {
@@ -30,8 +30,8 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
 	#[command(
-		about = "Create a new Murgamu project with modular structure",
-		long_about = "Creates a new Murgamu project with a complete file structure including:\n  - Main application file\n  - Module structure (controllers, services, modules)\n  - Example implementations\n  - Cargo configuration"
+		about = "Create a new Murgamü project with modular structure",
+		long_about = "Creates a new Murgamü project with a complete file structure including:\n  - Main application file\n  - Module structure (controllers, services, modules)\n  - Example implementations\n  - Cargo configuration"
 	)]
 	New {
 		#[arg(value_name = "PROJECT_NAME")]
