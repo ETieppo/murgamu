@@ -2,7 +2,7 @@
 name = "murgamu"
 version = "0.7.3"
 edition = "2021"
-description = "Murgamu is an NestJS-inspired web framework for Rust"
+description = "Murgamü is an NestJS-inspired web framework for Rust"
 repository = "https://github.com/etieppo/murgamu"
 license = "MIT"
 keywords = ["framework", "http", "nestjs", "server", "web"]
