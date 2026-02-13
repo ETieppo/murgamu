@@ -1,10 +1,11 @@
+```
  __  __                                 _   _ 
 |  \/  |_   _ _ __ __ _  __ _ _ __ ___ (_) (_)
 | |\/| | | | | '__/ _` |/ _` | '_ ` _ \| | | |
 | |  | | |_| | | | (_| | (_| | | | | | | |_| |
 |_|  |_|\__,_|_|  \__, |\__,_|_| |_| |_|\__,_|
-                  |___/                       
-                  
+                 |___/                       
+```
                   
 This is just another backend framework in Rust created by me to solve my problems the way I personally wanted.
 Mumrgaü was not created to be highly performant — my application could even have been written in Node.js/Bun.js (like Nest.js). Even so, due to the language and in benchmarks, it achieves good results. Still, I do not recommend it for production. The project is in its early stages and requires many tests and guarantees that I still intend to implement. This will take time.
