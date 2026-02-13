@@ -53,20 +53,20 @@ fn main() {
 	}
 
 	let Some(command) = cli.command else {
-		println!("Use --help para ajuda");
+		println!("use --help for info");
 		return;
 	};
 
 	let result = match command {
 		Commands::New { name } => execute(name),
 		Commands::Dev => {
-			ensure_cargo_watch().expect("Error to ensure cargo watch");
+			ensure_cargo_watch().expect("[ERROR]: to ensure cargo watch");
 			dev_command()
 		}
 	};
 
 	if let Err(e) = result {
-		eprintln!("Error: {}", e);
+		eprintln!("[ERROR]: {}", e);
 		std::process::exit(1);
 	}
 }
