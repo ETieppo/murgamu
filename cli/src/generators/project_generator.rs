@@ -2,6 +2,8 @@ use crate::templates::*;
 use std::fs;
 use std::path::Path;
 
+const CORE_VERSION: &str = env!("MURGAMU_CORE_VERSION");
+
 pub struct ProjectGenerator {
 	project_name: String,
 }
@@ -15,10 +17,10 @@ impl ProjectGenerator {
 		self.gen_dir()?;
 		self.gen_files()?;
 
-		println!("'{}' successfully created!", self.project_name);
-		println!("Next steps:");
+		println!("\n✨ '{}' successfully created!\n", self.project_name);
+		println!("🚀 Next steps:");
 		println!("   cd {}", self.project_name);
-		println!("   mur dev");
+		println!("   mur dev\n");
 		Ok(())
 	}
 
@@ -40,7 +42,9 @@ impl ProjectGenerator {
 
 		fs::write(
 			root_path.join("Cargo.toml"),
-			CARGO_TEMPLATE.replace("{{project_name}}", &self.project_name),
+			CARGO_TEMPLATE
+				.replace("{{project_name}}", &self.project_name)
+				.replace("{{murgamu_version}}", CORE_VERSION),
 		)?;
 		fs::write(modules_path.join("mod.rs"), MODULES_MOD_TEMPLATE)?;
 		fs::write(root_path.join(".rustfmt.toml"), FORMATTER_TEMPLATE)?;
