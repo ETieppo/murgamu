@@ -1,0 +1,52 @@
+[package]
+name = "murgamu"
+version = "0.7.3"
+edition = "2021"
+description = "Murgamu is an NestJS-inspired web framework for Rust"
+repository = "https://github.com/etieppo/murgamu"
+license = "MIT"
+keywords = ["framework", "http", "nestjs", "server", "web"]
+categories = ["asynchronous", "web-programming", "web-programming::http-server"]
+
+[workspace]
+members = ["cli", "macros"]
+
+[lib]
+name = "murgamu"
+path = "src/lib.rs"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+http = "1.0"
+http-body-util = "0.1"
+hyper = { version = "1.8", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+indexmap = { version = "2.2", features = ["serde"] }
+murgamu-macros = { path = "./macros" }
+regex = "1.10"
+rustls = { version = "0.23" }
+rustls-pemfile = { version = "2.1" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_urlencoded = "0.7"
+tokio = { version = "1", features = ["full"] }
+tokio-rustls = { version = "0.26" }
+urlencoding = "2.1"
+webpki-roots = { version = "0.26" }
+
+[dev-dependencies]
+base64 = "0.22"
+rcgen = "0.13"
+tokio-test = "0.4"
+uuid = { version = "1.0", features = ["v4"] }
+
+[features]
+default = ["full"]
+full = ["openapi", "testing", "tls"]
+openapi = []
+testing = []
+tls = []
+# Future features
+# validation = []
+# websocket = ["tokio-tungstenite"]
+# tracing = ["tracing", "tracing-subscriber"]

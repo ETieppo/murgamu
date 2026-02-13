@@ -1,0 +1,19 @@
+pub mod app_controller_template;
+pub mod app_mod_content_template;
+pub mod app_service_template;
+pub mod cargo_template;
+pub mod formatter_template;
+pub mod main_template;
+pub mod models_mod_template;
+pub mod mods_mod_template;
+pub mod user_props_template;
+
+pub use app_controller_template::CONTROLLER_TEMPLATE;
+pub use app_mod_content_template::APP_MOD_CONTENT_TEMPLATE;
+pub use app_service_template::SERVICE_TEMPLATE;
+pub use cargo_template::CARGO_TEMPLATE;
+pub use formatter_template::FORMATTER_TEMPLATE;
+pub use main_template::MAIN_TEMPLATE;
+pub use models_mod_template::MODELS_MOD_TEMPLATE;
+pub use mods_mod_template::MODULES_MOD_TEMPLATE;
+pub use user_props_template::USER_PROPS_TEMPLATE;

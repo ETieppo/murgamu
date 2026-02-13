@@ -1,0 +1,11 @@
+[package]
+name = "mur"
+version = "0.1.4"
+edition = "2024"
+
+[[bin]]
+name = "mur"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5.56", features = ["derive"] }
