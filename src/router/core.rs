@@ -12,8 +12,6 @@ use hyper::{Request, Response, StatusCode};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-const PAPIRUS_FILE_CONTENT: &str = include_str!("../../art/router.ans");
-
 pub struct MurRouter {
 	pub(crate) routes_by_method: HashMap<String, Vec<MurRouteEntry>>,
 	pub(crate) global_guards: Vec<Arc<dyn MurGuard>>,
