@@ -4,7 +4,7 @@ version = "0.7.3"
 edition = "2021"
 description = "Murgamü is an NestJS-inspired web framework for Rust"
 repository = "https://github.com/etieppo/murgamu"
-license = "MIT"
+license = "LGPL-3.0-or-later"
 keywords = ["framework", "http", "nestjs", "server", "web"]
 categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 
@@ -22,7 +22,7 @@ http-body-util = "0.1"
 hyper = { version = "1.8", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 indexmap = { version = "2.2", features = ["serde"] }
-murgamu-macros = { path = "./macros" }
+murgamu-macros = { path = "./macros", version = "0.3.2" }
 regex = "1.10"
 rustls = { version = "0.23" }
 rustls-pemfile = { version = "2.1" }
