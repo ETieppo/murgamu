@@ -12,7 +12,7 @@ categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 members = ["cli", "macros"]
 
 [workspace.package]
-version = "8"
+version = "0.8.0"
 
 [lib]
 name = "murgamu"
