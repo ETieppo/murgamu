@@ -1,11 +1,11 @@
-use crate::{container::core::MurServiceContainer, types::MurRouteHandler};
+use crate::{
+	container::core::MurServiceContainer,
+	types::{MurRouteDefinition},
+};
 use std::sync::Arc;
 
 pub trait MurController: Send + Sync + 'static {
-	fn routes(
-		self: Arc<Self>,
-		container: Arc<MurServiceContainer>,
-	) -> Vec<(String, String, MurRouteHandler)>;
+	fn routes(self: Arc<Self>, container: Arc<MurServiceContainer>) -> Vec<MurRouteDefinition>;
 
 	fn base_path(&self) -> &str {
 		"/"

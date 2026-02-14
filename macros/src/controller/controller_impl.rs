@@ -30,6 +30,8 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 		if let syn::ImplItem::Fn(method) = item {
 			let method_name = &method.sig.ident;
 			let method_inputs = &method.sig.inputs;
+			let mut is_public = false;
+			let mut allowed_roles: Vec<String> = Vec::new();
 
 			if let syn::ImplItem::Fn(method) = item {
 				let method_name = &method.sig.ident;
@@ -58,6 +60,21 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 			}
 
 			for attr in &method.attrs {
+				if attr.path().is_ident("public") {
+					is_public = true;
+				}
+				if attr.path().is_ident("role") {
+					if let Meta::List(meta_list) = &attr.meta {
+						let tokens_str = meta_list.tokens.to_string();
+						for part in tokens_str.split(',') {
+							let role = part.trim();
+							if let Some(name) = role.split("::").last() {
+								allowed_roles.push(name.to_string());
+							}
+						}
+					}
+				}
+
 				if let Meta::List(MetaList { path, tokens, .. }) = &attr.meta {
 					if let Some(ident) = path.get_ident() {
 						let http_method = ident.to_string();
@@ -90,12 +107,14 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 							let handler_code = super::generate_handler_code(method_name, &params);
 
 							route_registrations.push(quote! {
-							  routes.push((
-								#http_method_upper.to_string(),
-								#full_path.to_string(),
-								#handler_code
-							  ));
-							});
+							  routes.push(MurRouteDefinition {
+									  method: #http_method_upper.to_string(),
+									  path: #full_path.to_string(),
+									  handler: #handler_code,
+									  is_public: #is_public,
+									  allowed_roles: vec![#(#allowed_roles.to_string()),*],
+								  });
+								 });
 						}
 					}
 				}
@@ -108,14 +127,14 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 	  fn routes(
 		self: Arc<Self>,
 		_container: std::sync::Arc<MurServiceContainer>,
-	  ) -> Vec<(String, String, MurRouteHandler)> {
+	  ) -> Vec<MurRouteDefinition> {
 		use murgamu::{
 		  MurController, MurServiceContainer, MurRouteHandler, MurFuture, MurRes,
 		  MurRequestContext, MurJson, MurQuery, MurPath, Param, MurError, MurHttpResponse,
-		  MurResponder
+		  MurResponder, MurRouteDefinition
 		};
 
-		let mut routes: Vec<(String, String, MurRouteHandler)> = Vec::new();
+		let mut routes: Vec<MurRouteDefinition> = Vec::new();
 		let controller = self.clone();
 
 		#(#route_registrations)*

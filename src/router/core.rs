@@ -4,6 +4,7 @@ use crate::container::core::MurServiceContainer;
 use crate::core::error::MurError;
 use crate::mur_http::request::MurRequestContext;
 use crate::mur_http::MurHttpResponse;
+use crate::router::entry::MurRouteAccessControl;
 use crate::traits::{MurController, MurExceptionFilter, MurGuard, MurInterceptor, MurMiddleware};
 use crate::types::{MurPathParams, MurRes, MurRouteHandler, MurRouteInfo};
 use http_body_util::{BodyExt, Full};
@@ -50,24 +51,29 @@ impl MurRouter {
 		let controller_name = controller.name().to_string();
 		let routes = controller.routes(Arc::clone(&self.container));
 
-		for (method, path, handler) in routes {
-			let pattern = MurRoutePattern::new(&path);
-			let entry = MurRouteEntry::new(pattern, handler);
+		for route_def in routes {
+			let pattern = MurRoutePattern::new(&route_def.path);
+			let mut entry = MurRouteEntry::new(pattern, route_def.handler);
+
+			entry.access_control = MurRouteAccessControl {
+				is_public: route_def.is_public,
+				allowed_roles: route_def.allowed_roles.into_iter().collect(),
+			};
 
 			self.route_info.push(MurRouteInfo {
-				method: method.clone(),
-				path: path.clone(),
+				method: route_def.method.clone(),
+				path: route_def.path.clone(),
 				controller: controller_name.clone(),
 				handler: String::new(),
 			});
 
 			self.routes_by_method
-				.entry(method.clone())
+				.entry(route_def.method.clone())
 				.or_default()
 				.push(entry);
 
-			if !self.registered_methods.contains(&method) {
-				self.registered_methods.push(method);
+			if !self.registered_methods.contains(&route_def.method) {
+				self.registered_methods.push(route_def.method);
 			}
 		}
 
@@ -347,6 +353,8 @@ impl MurRouter {
 	}
 
 	async fn execute_handler(&self, route: &MurRouteEntry, ctx: MurRequestContext) -> MurRes {
+		let ctx = ctx.with_access_control(route.access_control.clone());
+
 		for guard in &self.global_guards {
 			if !guard.can_activate(&ctx).await {
 				return guard.rejection_response();

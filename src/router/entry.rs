@@ -2,15 +2,22 @@ use super::pattern::MurRoutePattern;
 use crate::traits::{MurGuard, MurInterceptor};
 use crate::types::MurRouteHandler;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::Arc;
+
+#[derive(Default, Clone)]
+pub struct MurRouteAccessControl {
+	pub is_public: bool,
+	pub allowed_roles: HashSet<String>,
+}
 
 pub(crate) struct MurRouteEntry {
 	pub pattern: MurRoutePattern,
 	pub handler: MurRouteHandler,
 	pub guards: Vec<Arc<dyn MurGuard>>,
 	pub interceptors: Vec<Arc<dyn MurInterceptor>>,
-	#[allow(dead_code)]
 	pub metadata: HashMap<String, String>,
+	pub access_control: MurRouteAccessControl,
 }
 
 impl MurRouteEntry {
@@ -21,6 +28,7 @@ impl MurRouteEntry {
 			guards: Vec::new(),
 			interceptors: Vec::new(),
 			metadata: HashMap::new(),
+			access_control: MurRouteAccessControl::default(),
 		}
 	}
 }

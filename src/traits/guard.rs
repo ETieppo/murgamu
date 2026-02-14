@@ -4,7 +4,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 pub trait MurGuard: Send + Sync + 'static {
-	fn can_activate(&self, ctx: &MurRequestContext) -> MurGuardFuture;
+	fn can_activate<'a>(&'a self, ctx: &'a MurRequestContext) -> MurGuardFuture<'a>;
 
 	fn rejection_response(&self) -> MurRes {
 		crate::types::MurHttpResponse::forbidden().json(serde_json::json!({
@@ -18,7 +18,7 @@ pub trait MurGuard: Send + Sync + 'static {
 	}
 }
 
-pub type MurGuardFuture = Pin<Box<dyn Future<Output = bool> + Send>>;
+pub type MurGuardFuture<'a> = Pin<Box<dyn Future<Output = bool> + Send + 'a>>;
 
 pub trait MurGuardSync: Send + Sync + 'static {
 	fn can_activate_sync(&self, ctx: &MurRequestContext) -> bool;

@@ -166,3 +166,13 @@ pub fn derive_dto(input: TokenStream) -> TokenStream {
 pub fn derive_entity(input: TokenStream) -> TokenStream {
 	derive::derive_entity_impl(input)
 }
+
+#[proc_macro_attribute]
+pub fn public(_args: TokenStream, input: TokenStream) -> TokenStream {
+	input
+}
+
+#[proc_macro_attribute]
+pub fn role(_args: TokenStream, input: TokenStream) -> TokenStream {
+	input
+}

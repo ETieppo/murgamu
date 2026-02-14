@@ -1,13 +1,14 @@
 use crate::container::core::MurServiceContainer;
 use crate::core::error::MurError;
+use crate::router::entry::MurRouteAccessControl;
 use crate::traits::MurService;
 use crate::utils::mur_codec::MurCodec;
 use http::request::Parts;
 use hyper::body::Bytes;
 use serde::de::DeserializeOwned;
-use std::cell::OnceCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 pub type MurReq = MurRequestContext;
 
@@ -17,7 +18,8 @@ pub struct MurRequestContext {
 	pub body: Option<Bytes>,
 	pub path_params: HashMap<String, String>,
 	pub container: Arc<MurServiceContainer>,
-	query_cache: OnceCell<HashMap<String, String>>,
+	query_cache: OnceLock<HashMap<String, String>>,
+	pub(crate) access_control: Option<MurRouteAccessControl>,
 }
 
 impl MurRequestContext {
@@ -32,7 +34,8 @@ impl MurRequestContext {
 			body,
 			path_params,
 			container,
-			query_cache: OnceCell::new(),
+			query_cache: OnceLock::new(),
+			access_control: None,
 		}
 	}
 
@@ -278,6 +281,29 @@ impl MurRequestContext {
 		let query = self.parts.uri.query().unwrap_or("");
 		serde_urlencoded::from_str(query)
 			.map_err(|e| MurError::BadRequest(format!("Failed to parse query params: {}", e)))
+	}
+
+	pub fn with_access_control(mut self, access_control: MurRouteAccessControl) -> Self {
+		self.access_control = Some(access_control);
+		self
+	}
+
+	pub fn is_public_route(&self) -> bool {
+		self.access_control
+			.as_ref()
+			.map(|ac| ac.is_public)
+			.unwrap_or(false)
+	}
+
+	pub fn allowed_roles(&self) -> Option<&HashSet<String>> {
+		self.access_control.as_ref().map(|ac| &ac.allowed_roles)
+	}
+
+	pub fn has_allowed_role(&self, role: &str) -> bool {
+		self.access_control
+			.as_ref()
+			.map(|ac| ac.allowed_roles.is_empty() || ac.allowed_roles.contains(role))
+			.unwrap_or(true)
 	}
 }
 

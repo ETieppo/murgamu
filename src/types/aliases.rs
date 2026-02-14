@@ -9,6 +9,23 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
+#[derive(Debug, Clone)]
+pub struct MurRouteInfo {
+	pub method: String,
+	pub path: String,
+	pub controller: String,
+	pub handler: String,
+}
+
+#[derive(Clone)]
+pub struct MurRouteDefinition {
+	pub method: String,
+	pub path: String,
+	pub handler: MurRouteHandler,
+	pub is_public: bool,
+	pub allowed_roles: Vec<String>,
+}
+
 pub type MurMainResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub type MurRes = Result<Response<Full<Bytes>>, MurError>;
 pub type MurResInfallible = Result<Response<Full<Bytes>>, std::convert::Infallible>;
@@ -80,12 +97,4 @@ macro_rules! mur_service {
 			svc as std::sync::Arc<dyn $crate::traits::MurService>,
 		)
 	}};
-}
-
-#[derive(Debug, Clone)]
-pub struct MurRouteInfo {
-	pub method: String,
-	pub path: String,
-	pub controller: String,
-	pub handler: String,
 }

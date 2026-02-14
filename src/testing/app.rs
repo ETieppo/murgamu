@@ -304,15 +304,15 @@ impl MurTestAppBuilder {
 
 		for module in &self.modules {
 			for controller in module.controllers_with_injects(&self.injects) {
-				for (method, path, handler) in controller.routes(Arc::clone(&container)) {
-					router.route(&method, &path, handler);
+				for r in controller.routes(Arc::clone(&container)) {
+					router.route(&r.method, &r.path, r.handler);
 				}
 			}
 		}
 
 		for controller in &self.controllers {
-			for (method, path, handler) in controller.clone().routes(Arc::clone(&container)) {
-				router.route(&method, &path, handler);
+			for r in controller.clone().routes(Arc::clone(&container)) {
+				router.route(&r.method, &r.path, r.handler);
 			}
 		}
 

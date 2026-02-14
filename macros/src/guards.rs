@@ -18,10 +18,10 @@ fn generate_guard_impl(input: &ItemStruct) -> TokenStream2 {
 		#input
 
 		impl #impl_generics MurGuard for #struct_name #ty_generics #where_clause {
-			fn can_activate(
-				&self,
-				ctx: &MurRequestContext,
-			) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + Send + '_>> {
+			fn can_activate<'a>(
+				&'a self,
+				ctx: &'a MurRequestContext,
+			) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool> + Send + 'a>> {
 				Box::pin(async move {
 					self.check(ctx).await
 				})

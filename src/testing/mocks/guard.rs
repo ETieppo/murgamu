@@ -82,7 +82,7 @@ impl Clone for MockGuard {
 }
 
 impl MurGuard for MockGuard {
-	fn can_activate(&self, ctx: &MurRequestContext) -> MurGuardFuture {
+	fn can_activate<'a>(&'a self, ctx: &'a MurRequestContext) -> MurGuardFuture<'a> {
 		self.call_count.fetch_add(1, Ordering::SeqCst);
 
 		let result = if let Some(ref check_fn) = self.check_fn {
