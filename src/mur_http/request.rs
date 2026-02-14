@@ -125,6 +125,37 @@ impl MurRequestContext {
 		self.parts.headers.contains_key(name)
 	}
 
+	pub fn cookie(&self, name: &str) -> Option<&str> {
+		self.header("Cookie").and_then(|cookies| {
+			cookies.split(';').map(|s| s.trim()).find_map(|cookie| {
+				let (key, value) = cookie.split_once('=')?;
+				if key == name {
+					Some(value)
+				} else {
+					None
+				}
+			})
+		})
+	}
+
+	pub fn cookies(&self) -> HashMap<String, String> {
+		self.header("Cookie")
+			.map(|cookies| {
+				cookies
+					.split(';')
+					.filter_map(|cookie| {
+						let (key, value) = cookie.trim().split_once('=')?;
+						Some((key.to_string(), value.to_string()))
+					})
+					.collect()
+			})
+			.unwrap_or_default()
+	}
+
+	pub fn has_cookie(&self, name: &str) -> bool {
+		self.cookie(name).is_some()
+	}
+
 	pub fn content_type(&self) -> Option<&str> {
 		self.header("Content-Type")
 	}
