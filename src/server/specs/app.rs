@@ -294,11 +294,13 @@ impl MurTestAppBuilder {
 	pub fn build(self) -> MurTestApp {
 		let mut container = MurServiceContainer::new();
 
-		for module in &self.modules {
-			for (_type_id, service) in module.services_with_injects(&self.injects) {
-				container.register_dyn_service(service);
-			}
-		}
+		// TODO:
+		// FIX:
+		// for module in &self.modules {
+		// 	for (_type_id, service) in module.services_with_injects(&self.injects, ) {
+		// 		container.register_dyn_service(service);
+		// 	}
+		// }
 
 		for (_type_id, service) in self.services {
 			container.register_dyn_service(service);

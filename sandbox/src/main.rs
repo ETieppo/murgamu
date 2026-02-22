@@ -1,6 +1,12 @@
-use murgamu::{MurMainResult, MurServer, prelude::*};
+mod attributes;
+mod manual;
 
-#[murgamu::main]
+use manual::ModuleTest;
+use murgamu::MurMainResult;
+use murgamu::MurServer;
+use murgamu::tokio;
+
+#[tokio::main]
 async fn main() -> MurMainResult {
 	MurServer::new()
 		.module(ModuleTest::new())
@@ -8,19 +14,3 @@ async fn main() -> MurMainResult {
 		.run()
 		.await
 }
-
-#[module]
-pub struct ModuleTest;
-
-#[service]
-pub struct ServiceTest;
-impl ServiceTest {
-	fn new() -> Self {
-		Self
-	}
-}
-
-pub struct ControllerTest;
-
-#[controller("test")]
-impl ControllerTest {}

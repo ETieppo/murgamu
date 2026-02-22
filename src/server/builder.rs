@@ -12,6 +12,7 @@ use super::service::MurInjectable;
 use super::service::MurInjects;
 use super::service::MurService;
 use super::service::MurServiceContainer;
+use std::collections::HashSet;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
@@ -56,6 +57,45 @@ impl MurServer {
 			config,
 			on_startup: Vec::new(),
 			on_shutdown: Vec::new(),
+		}
+	}
+
+	fn build_imports_exports_container(
+		module: &Box<dyn MurModule>,
+		injects: &MurInjects,
+	) -> MurServiceContainer {
+		let mut out = MurServiceContainer::new();
+		let mut visited = HashSet::<usize>::new();
+
+		for imported in module.imports() {
+			Self::fill_exports_rec_arc(imported, injects, &mut out, &mut visited);
+		}
+
+		out
+	}
+
+	fn fill_exports_rec_arc(
+		module: Arc<dyn MurModule>,
+		injects: &MurInjects,
+		out: &mut MurServiceContainer,
+		visited: &mut HashSet<usize>,
+	) {
+		let key = Arc::as_ptr(&module) as *const () as usize;
+		if !visited.insert(key) {
+			return;
+		}
+
+		for imported in module.imports() {
+			Self::fill_exports_rec_arc(imported.clone(), injects, out, visited);
+		}
+
+		let services = module.services_with_injects(injects, out);
+		let export_ids = module.exports();
+
+		for (tid, svc) in services {
+			if export_ids.contains(&tid) {
+				out.register_dyn_with_id(tid, svc);
+			}
 		}
 	}
 
@@ -162,22 +202,29 @@ impl MurServer {
 
 	pub fn bind_addr(mut self, addr: SocketAddr) -> Result<MurServerRunner, std::io::Error> {
 		self.config.addr = addr;
-		let mut all_services = Vec::new();
 		self.injects.on_init();
+
+		let mut global = MurServiceContainer::new();
+		global.merge(self.container);
 
 		for module in &self.modules {
 			module.on_init();
 
-			for (type_id, service) in module.services_with_injects(&self.injects) {
-				all_services.push((type_id, service));
+			let mut visible = Self::build_imports_exports_container(module, &self.injects);
+			visible.merge(global.clone());
+			global.merge(visible.clone());
+			let local_services = module.services_with_injects(&self.injects, &visible);
+
+			for (tid, svc) in local_services.iter() {
+				visible.register_dyn_with_id(*tid, svc.clone());
+			}
+
+			for (tid, svc) in local_services {
+				global.register_dyn_with_id(tid, svc);
 			}
 		}
 
-		for (type_id, service) in all_services {
-			self.container.services.insert(type_id, service);
-		}
-
-		let container = Arc::new(self.container);
+		let container = Arc::new(global);
 		let mut router = MurRouter::new(Arc::clone(&container));
 
 		for guard in self.guards {

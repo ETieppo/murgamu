@@ -1,3 +1,4 @@
+use crate::MurServiceContainer;
 use crate::server::controller::MurController;
 use crate::server::service::MurInjects;
 use crate::server::service::MurService;
@@ -10,8 +11,6 @@ pub trait MurModuleConfig {
 }
 
 pub trait MurModule: Send + Sync + 'static {
-	fn name(&self) -> &str;
-
 	fn controllers(&self) -> Vec<Arc<dyn MurController>> {
 		Vec::new()
 	}
@@ -24,11 +23,17 @@ pub trait MurModule: Send + Sync + 'static {
 		Vec::new()
 	}
 
-	fn services_with_injects(&self, _injects: &MurInjects) -> Vec<(TypeId, Arc<dyn MurService>)> {
+	fn services_with_injects(
+		&self,
+		_injects: &MurInjects,
+		_container: &MurServiceContainer,
+	) -> Vec<(TypeId, Arc<dyn MurService>)> {
 		self.services()
 	}
 
+	fn name(&self) -> &str;
+	fn exports(&self) -> Vec<TypeId>;
+	fn imports(&self) -> Vec<Arc<dyn MurModule>>;
 	fn on_init(&self) {}
-
 	fn on_shutdown(&self) {}
 }

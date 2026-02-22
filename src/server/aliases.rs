@@ -25,7 +25,7 @@ macro_rules! mur_controllers {
 		Vec::new()
 	};
 	($($controller:expr),+ $(,)?) => {
-		vec![$(Box::new($controller) as Box<dyn $crate::traits::controller::MurController>),+]
+		vec![$(Box::new($controller) as Box<dyn $crate::server::controller::MurController>),+]
 	};
 }
 
@@ -38,7 +38,7 @@ macro_rules! mur_services {
 		vec![$(
 			(
 				std::any::TypeId::of::<std::sync::Arc<_>>(),
-				$service as std::sync::Arc<dyn $crate::traits::MurService>
+				$service as std::sync::Arc<dyn $crate::server::service::MurService>
 			)
 		),+]
 	};
@@ -50,7 +50,7 @@ macro_rules! mur_service {
 		let svc = $service.clone();
 		(
 			std::any::TypeId::of::<std::sync::Arc<_>>(),
-			svc as std::sync::Arc<dyn $crate::traits::MurService>,
+			svc as std::sync::Arc<dyn $crate::server::service::MurService>,
 		)
 	}};
 }

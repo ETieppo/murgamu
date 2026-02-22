@@ -111,6 +111,12 @@ impl MurServiceContainer {
 		None
 	}
 
+	pub fn register_dyn_with_id(&mut self, type_id: TypeId, service: Arc<dyn MurService>) {
+		self.services.insert(type_id, service);
+		self.provider_scopes
+			.insert(type_id, MurProviderScope::Singleton);
+	}
+
 	pub fn get_required<T: MurService>(&self) -> Arc<T> {
 		self.get::<T>()
 			.unwrap_or_else(|| panic!("Required service not found: {}", std::any::type_name::<T>()))

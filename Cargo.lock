@@ -867,7 +867,6 @@ name = "sandbox"
 version = "0.8.1"
 dependencies = [
  "murgamu",
- "tokio",
 ]
 
 [[package]]

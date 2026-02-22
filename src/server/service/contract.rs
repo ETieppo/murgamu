@@ -1,4 +1,5 @@
 use super::MurInjects;
+use crate::MurServiceContainer;
 use std::any::Any;
 
 pub trait MurService: Send + Sync + 'static {
@@ -8,7 +9,7 @@ pub trait MurService: Send + Sync + 'static {
 }
 
 pub trait MurServiceFactory: MurService {
-	fn create(injects: &MurInjects) -> Self;
+	fn create(injects: &MurInjects, _container: &MurServiceContainer) -> Self;
 }
 
 pub trait MurInjectable: Send + Sync + 'static {
