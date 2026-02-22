@@ -5,7 +5,7 @@ use {
 };
 
 use crate::types::ParamInfo;
-use crate::utils::{analyze_parameter, is_constructor, normalize_path};
+use crate::utils::{analyze_parameter, has_self, is_constructor, normalize_path};
 
 pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenStream {
 	let base_path = if !args.is_empty() {
@@ -36,26 +36,18 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 			if let syn::ImplItem::Fn(method) = item {
 				let method_name = &method.sig.ident;
 				let method_inputs = &method.sig.inputs;
-				let is_constructor = is_constructor(&method.sig.output);
 
-				if !is_constructor {
-					let has_self = method_inputs
-						.first()
-						.map_or(false, |input| matches!(input, FnArg::Receiver(_)));
-
-					if !has_self {
-						let method_name_str = method_name.to_string();
-						return quote! {
-						  compile_error!(concat!(
-							"Invalid controller method `",
-							#method_name_str,
-							"`.\n\n",
-							"Route handlers in Murgamü must be instance methods and ",
-							"receive `&self` as the first parameter.\n\n",
-						  ));
-						}
-						.into();
-					}
+				if !is_constructor(&method.sig.output) && !has_self(method_inputs) {
+					let method_name_str = method_name.to_string();
+					return quote! {
+					  compile_error!(concat!(
+						"Invalid controller method `",
+						#method_name_str,
+						"`.\n\n",
+						"Route handlers in Murgamü must be instance methods and ",
+						"receive `&self` as the first parameter.\n\n",
+					  ));
+					};
 				}
 			}
 
@@ -107,14 +99,14 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 							let handler_code = super::generate_handler_code(method_name, &params);
 
 							route_registrations.push(quote! {
-							  routes.push(MurRouteDefinition {
-									  method: #http_method_upper.to_string(),
-									  path: #full_path.to_string(),
-									  handler: #handler_code,
-									  is_public: #is_public,
-									  allowed_roles: vec![#(#allowed_roles.to_string()),*],
-								  });
-								 });
+							routes.push(MurRouteDefinition {
+									method: #http_method_upper.to_string(),
+									path: #full_path.to_string(),
+									handler: #handler_code,
+									is_public: #is_public,
+									allowed_roles: vec![#(#allowed_roles.to_string()),*],
+								});
+							   });
 						}
 					}
 				}
@@ -128,22 +120,32 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 		self: Arc<Self>,
 		_container: std::sync::Arc<MurServiceContainer>,
 	  ) -> Vec<MurRouteDefinition> {
-		use murgamu::{
-		  MurController, MurServiceContainer, MurRouteHandler, MurFuture, MurRes,
-		  MurRequestContext, MurJson, MurQuery, MurPath, Param, MurError, MurHttpResponse,
-		  MurResponder, MurRouteDefinition
-		};
+			use murgamu::{
+			MurController,
+			MurServiceContainer,
+			MurRouteHandler,
+			MurFuture,
+			MurRes,
+			MurRequestContext,
+			MurJson,
+			MurQuery,
+			MurPath,
+			Param,
+			MurError,
+			MurHttpResponse,
+			MurResponder,
+			MurRouteDefinition,
+			};
 
-		let mut routes: Vec<MurRouteDefinition> = Vec::new();
-		let controller = self.clone();
+			let mut routes: Vec<MurRouteDefinition> = Vec::new();
+			let controller = self.clone();
 
-		#(#route_registrations)*
-
-		routes
+			#(#route_registrations)*
+			routes
 	  }
 
 	  fn base_path(&self) -> &str {
-		#base_path
+			#base_path
 	  }
 	}};
 
