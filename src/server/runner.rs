@@ -1,8 +1,8 @@
 use super::config::MurServerConfig;
-use crate::router::MurRouter;
-use crate::security::tls::acceptor::MurTlsAcceptor;
-use crate::traits::MurModule;
-use crate::container::injects::MurInjects;
+use super::module::MurModule;
+use super::router::MurRouter;
+use super::security::tls::acceptor::MurTlsAcceptor;
+use crate::server::service::MurInjects;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
@@ -79,11 +79,9 @@ impl MurServerRunner {
 				if let Err(err) = http1::Builder::new()
 					.serve_connection(io, service)
 					.with_upgrades()
-					.await
+					.await && !err.to_string().contains("connection closed")
 				{
-					if !err.to_string().contains("connection closed") {
-						eprintln!("Connection error: {}", err);
-					}
+					eprintln!("Connection error: {}", err);
 				}
 			});
 		}
@@ -113,11 +111,9 @@ impl MurServerRunner {
 						if let Err(err) = http1::Builder::new()
 							.serve_connection(io, service)
 							.with_upgrades()
-							.await
+							.await && !err.to_string().contains("connection closed")
 						{
-							if !err.to_string().contains("connection closed") {
-								eprintln!("TLS connection error: {}", err);
-							}
+							eprintln!("TLS connection error: {}", err);
 						}
 					}
 					Err(e) => {
@@ -178,10 +174,8 @@ impl MurServerRunner {
 										loop {
 											tokio::select! {
 												result = conn.as_mut() => {
-													if let Err(err) = result {
-														if !err.to_string().contains("connection closed") {
-															eprintln!("TLS connection error: {}", err);
-														}
+													if let Err(err) = result && !err.to_string().contains("connection closed") {
+														eprintln!("TLS connection error: {}", err);
 													}
 													break;
 												}
@@ -279,10 +273,8 @@ impl MurServerRunner {
 								loop {
 									tokio::select! {
 										result = conn.as_mut() => {
-											if let Err(err) = result {
-												if !err.to_string().contains("connection closed") {
-													eprintln!("Connection error: {}", err);
-												}
+											if let Err(err) = result &&!err.to_string().contains("connection closed") {
+												eprintln!("Connection error: {}", err);
 											}
 											break;
 										}

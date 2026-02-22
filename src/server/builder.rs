@@ -1,13 +1,17 @@
 use super::config::MurServerConfig;
+use super::error::MurExceptionFilter;
+use super::guard::MurGuard;
+use super::interceptor::MurInterceptor;
+use super::middleware::MurMiddleware;
+use super::module::MurModule;
+use super::router::MurRouter;
 use super::runner::MurServerRunner;
-use crate::container::core::MurServiceContainer;
-use crate::container::injects::MurInjects;
-use crate::router::MurRouter;
-use crate::security::tls::acceptor::MurTlsAcceptor;
-use crate::security::tls::config::MurTlsConfig;
-use crate::traits::{
-	MurExceptionFilter, MurGuard, MurInjectable, MurInterceptor, MurMiddleware, MurModule,
-};
+use super::security::tls::acceptor::MurTlsAcceptor;
+use super::security::tls::config::MurTlsConfig;
+use super::service::MurInjectable;
+use super::service::MurInjects;
+use super::service::MurService;
+use super::service::MurServiceContainer;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
@@ -90,12 +94,12 @@ impl MurServer {
 		self
 	}
 
-	pub fn service<T: crate::traits::MurService>(mut self, service: T) -> Self {
+	pub fn service<T: MurService>(mut self, service: T) -> Self {
 		self.container.register(service);
 		self
 	}
 
-	pub fn service_arc<T: crate::traits::MurService>(mut self, service: Arc<T>) -> Self {
+	pub fn service_arc<T: MurService>(mut self, service: Arc<T>) -> Self {
 		self.container.register_arc(service);
 		self
 	}

@@ -1,7 +1,7 @@
 [package]
 name = "murgamu"
 version.workspace = true
-edition = "2021"
+edition = "2024"
 description = "A NestJS-inspired web framework for Rust"
 repository = "https://github.com/etieppo/murgamu"
 license = "LGPL-3.0-or-later"
