@@ -9,7 +9,7 @@ keywords = ["framework", "http", "nestjs", "server", "web"]
 categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 
 [workspace]
-members = ["cli", "macros"]
+members = ["cli", "macros", "sandbox"]
 
 [workspace.package]
 version = "0.8.1"

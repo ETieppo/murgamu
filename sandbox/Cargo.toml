@@ -1,0 +1,9 @@
+[package]
+name = "sandbox"
+version.workspace = true
+edition = "2024"
+publish = false
+
+[dependencies]
+murgamu = { path = ".." }
+tokio = { version = "1", features = ["full"] }
