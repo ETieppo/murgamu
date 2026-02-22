@@ -1,7 +1,5 @@
-use super::controller::MurController;
 use super::error::MurError;
 use super::http::MurRequestContext;
-use super::service::MurService;
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
@@ -9,23 +7,6 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-
-#[derive(Debug, Clone)]
-pub struct MurRouteInfo {
-	pub method: String,
-	pub path: String,
-	pub controller: String,
-	pub handler: String,
-}
-
-#[derive(Clone)]
-pub struct MurRouteDefinition {
-	pub method: String,
-	pub path: String,
-	pub handler: MurRouteHandler,
-	pub is_public: bool,
-	pub allowed_roles: Vec<String>,
-}
 
 pub type MurMainResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub type MurRes = Result<Response<Full<Bytes>>, MurError>;
@@ -37,33 +18,6 @@ pub type MurResponse = Response<Full<Bytes>>;
 pub type MurRouteHandler = Arc<dyn Fn(MurRequestContext) -> MurFuture + Send + Sync>;
 pub type MurPathParams = HashMap<String, String>;
 pub type MurQueryParams = HashMap<String, String>;
-pub type MurControllers = Vec<Arc<dyn MurController>>;
-
-pub trait IntoController {
-	fn into_controller(self) -> Arc<dyn MurController>;
-}
-
-impl<T: MurController + 'static> IntoController for T {
-	fn into_controller(self) -> Arc<dyn MurController> {
-		Arc::new(self)
-	}
-}
-
-impl IntoController for Arc<dyn MurController> {
-	fn into_controller(self) -> Arc<dyn MurController> {
-		self
-	}
-}
-
-pub fn controllers<I, C>(items: I) -> MurControllers
-where
-	I: IntoIterator<Item = C>,
-	C: IntoController,
-{
-	items.into_iter().map(|c| c.into_controller()).collect()
-}
-
-pub type MurServices = Vec<(std::any::TypeId, Arc<dyn MurService>)>;
 
 #[macro_export]
 macro_rules! mur_controllers {

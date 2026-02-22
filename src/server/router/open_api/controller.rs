@@ -1,7 +1,7 @@
 use super::service::MurOpenApiService;
 use super::spec::MurOpenApiSpec;
 use super::swagger::MurSwagger;
-use crate::server::aliases::MurRouteDefinition;
+use crate::server::router::MurRouteDefinition;
 use crate::server::controller::MurController;
 use crate::server::http::MurHttpResponse;
 use crate::server::http::MurRequestContext;

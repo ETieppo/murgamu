@@ -1,6 +1,7 @@
+use super::MurRouteInfo;
 use super::entry::MurRouteEntry;
 use super::pattern::MurRoutePattern;
-use crate::server::aliases::{MurPathParams, MurRes, MurRouteHandler, MurRouteInfo};
+use crate::server::aliases::{MurPathParams, MurRes, MurRouteHandler};
 use crate::server::controller::MurController;
 use crate::server::error::MurError;
 use crate::server::error::MurExceptionFilter;

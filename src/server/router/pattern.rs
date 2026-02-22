@@ -26,6 +26,7 @@ impl MurRoutePattern {
 		let mut param_names = Vec::with_capacity(4);
 		let mut is_static = true;
 		let mut specificity = 0i32;
+
 		for segment in pattern.split('/').filter(|s| !s.is_empty()) {
 			if let Some(param_name) = segment.strip_prefix(':') {
 				param_names.push(param_name.to_string());

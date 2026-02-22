@@ -1,9 +1,9 @@
-pub mod base;
-pub mod env;
+mod base;
+mod env;
 mod functions;
-pub mod provider;
-pub mod server;
-pub mod source;
+mod provider;
+mod server;
+mod source;
 
 #[cfg(test)]
 mod test;
@@ -12,6 +12,7 @@ pub use base::MurConfig;
 pub use base::MurConfigBuilder;
 pub use base::MurConfigError;
 pub use base::MurConfigResult;
+pub use base::ConfigMetadata;
 
 pub use env::MurEnv;
 pub use env::MurEnvProfile;

@@ -1,12 +1,4 @@
-use super::{
-	content_security_policy::ContentSecurityPolicy, cross_domain_policy::CrossDomainPolicy,
-	cross_origin_embedder_policy::CrossOriginEmbedderPolicy,
-	cross_origin_opener_policy::CrossOriginOpenerPolicy,
-	cross_origin_resource_policy::CrossOriginResourcePolicy, hsts_config::HstsConfig,
-	permission_policy::PermissionsPolicy, referrer_policy::ReferrerPolicy,
-	security_headers::MurSecurityHeaders, security_headers_config::SecurityHeadersConfig,
-	x_frame_options::XFrameOptions, xss_protection::XssProtection,
-};
+use super::*;
 
 #[test]
 fn test_config_defaults() {
@@ -182,10 +174,12 @@ fn test_custom_headers() {
 		headers.config.custom_headers.get("X-Custom-Header"),
 		Some(&"custom-value".to_string())
 	);
-	assert!(headers
-		.config
-		.remove_headers
-		.contains(&"Server".to_string()));
+	assert!(
+		headers
+			.config
+			.remove_headers
+			.contains(&"Server".to_string())
+	);
 }
 
 #[test]

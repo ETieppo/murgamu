@@ -1,6 +1,22 @@
-use crate::server::aliases::MurRouteDefinition;
+use crate::server::router::MurRouteDefinition;
 use crate::server::service::MurServiceContainer;
 use std::sync::Arc;
+
+pub trait IntoController {
+	fn into_controller(self) -> Arc<dyn MurController>;
+}
+
+impl<T: MurController + 'static> IntoController for T {
+	fn into_controller(self) -> Arc<dyn MurController> {
+		Arc::new(self)
+	}
+}
+
+impl IntoController for Arc<dyn MurController> {
+	fn into_controller(self) -> Arc<dyn MurController> {
+		self
+	}
+}
 
 pub trait MurController: Send + Sync + 'static {
 	fn routes(self: Arc<Self>, container: Arc<MurServiceContainer>) -> Vec<MurRouteDefinition>;

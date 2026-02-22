@@ -3,7 +3,7 @@ use super::{
 	cross_origin_embedder_policy::CrossOriginEmbedderPolicy,
 	cross_origin_opener_policy::CrossOriginOpenerPolicy,
 	cross_origin_resource_policy::CrossOriginResourcePolicy, hsts_config::HstsConfig,
-	permission_policy::PermissionsPolicy, referrer_policy::ReferrerPolicy,
+	permission::PermissionsPolicy, referrer_policy::ReferrerPolicy,
 	security_headers_config::SecurityHeadersConfig, x_frame_options::XFrameOptions,
 	xss_protection::XssProtection,
 };

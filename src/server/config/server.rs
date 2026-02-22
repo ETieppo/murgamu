@@ -1,4 +1,4 @@
-use crate::server::security::tls::config::MurTlsConfig;
+use crate::server::security::tls::MurTlsConfig;
 use std::net::SocketAddr;
 use std::time::Duration;
 

@@ -1,7 +1,8 @@
+use super::MurRouteInfo;
 use super::core::MurRouter;
 use super::entry::MurRouteEntry;
 use super::pattern::MurRoutePattern;
-use crate::server::aliases::{MurRouteHandler, MurRouteInfo};
+use crate::server::aliases::MurRouteHandler;
 use crate::server::guard::MurGuard;
 use crate::server::interceptor::MurInterceptor;
 use std::collections::HashMap;

@@ -1,7 +1,7 @@
 use super::config::MurServerConfig;
 use super::module::MurModule;
 use super::router::MurRouter;
-use super::security::tls::acceptor::MurTlsAcceptor;
+use super::security::tls::MurTlsAcceptor;
 use crate::server::service::MurInjects;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
