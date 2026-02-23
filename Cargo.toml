@@ -7,6 +7,7 @@ repository = "https://github.com/etieppo/murgamu"
 license = "LGPL-3.0-or-later"
 keywords = ["framework", "http", "nestjs", "server", "web"]
 categories = ["asynchronous", "web-programming", "web-programming::http-server"]
+publish = true
 
 [workspace]
 members = ["cli", "macros", "sandbox"]
@@ -20,7 +21,11 @@ path = "src/lib.rs"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-diesel = { version = "2.2", features = ["chrono", "postgres", "r2d2"], optional = true }
+diesel = { version = "2.2", features = [
+  "chrono",
+  "postgres",
+  "r2d2",
+], optional = true }
 http = "1.0"
 http-body-util = "0.1"
 hyper = { version = "1.8", features = ["full"] }
@@ -36,11 +41,11 @@ serde_urlencoded = "0.7"
 tokio = { version = "1", features = ["full"] }
 tokio-rustls = { version = "0.26" }
 urlencoding = "2.1"
-webpki-roots = { version = "0.26" }
+webpki-roots = { version = "1.0.6" }
 
 [dev-dependencies]
 base64 = "0.22"
-rcgen = "0.13"
+rcgen = "0.14.7"
 tokio-test = "0.4"
 uuid = { version = "1.0", features = ["v4"] }
 

@@ -7,6 +7,7 @@ repository = "https://github.com/etieppo/murgamu"
 license = "LGPL-3.0-or-later"
 keywords = ["framework", "http", "nestjs", "server", "web"]
 categories = ["command-line-utilities", "development-tools"]
+publish = true
 
 [[bin]]
 name = "mur"

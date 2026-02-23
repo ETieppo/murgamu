@@ -3,16 +3,16 @@ use super::config;
 use super::config_builder;
 use super::error;
 use super::version;
-use rcgen::{generate_simple_self_signed, CertifiedKey};
+use rcgen::{CertifiedKey, generate_simple_self_signed};
 
 #[cfg(all(feature = "tls", test))]
 pub fn generate_self_signed(
 	domain: &str,
 ) -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
 	let subject_alt_names = vec![domain.to_string(), "localhost".to_string()];
-	let CertifiedKey { cert, key_pair } = generate_simple_self_signed(subject_alt_names)?;
+	let CertifiedKey { cert, signing_key } = generate_simple_self_signed(subject_alt_names)?;
 
-	Ok((cert.pem(), key_pair.serialize_pem()))
+	Ok((cert.pem(), signing_key.serialize_pem()))
 }
 
 #[cfg(all(test, feature = "tls"))]
