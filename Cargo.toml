@@ -12,7 +12,7 @@ categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 members = ["cli", "macros", "sandbox"]
 
 [workspace.package]
-version = "0.8.4"
+version = "0.8.5"
 
 [lib]
 name = "murgamu"
@@ -20,6 +20,7 @@ path = "src/lib.rs"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+diesel = { version = "2.2", features = ["chrono", "postgres", "r2d2"], optional = true }
 http = "1.0"
 http-body-util = "0.1"
 hyper = { version = "1.8", features = ["full"] }
@@ -45,7 +46,8 @@ uuid = { version = "1.0", features = ["v4"] }
 
 [features]
 default = ["full"]
-full = ["openapi", "testing", "tls"]
+diesel = ["dep:diesel"]
+full = ["diesel", "openapi", "testing", "tls"]
 openapi = []
 testing = []
 tls = []

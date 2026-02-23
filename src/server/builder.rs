@@ -1,5 +1,3 @@
-use crate::MurController;
-
 use super::config::MurServerConfig;
 use super::error::MurExceptionFilter;
 use super::guard::MurGuard;

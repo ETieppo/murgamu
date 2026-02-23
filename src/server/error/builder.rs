@@ -1,8 +1,8 @@
 use crate::server::aliases::MurRes;
 use http::StatusCode;
 use http_body_util::Full;
-use hyper::body::Bytes;
 use hyper::Response;
+use hyper::body::Bytes;
 
 pub type MurResult<T> = Result<T, MurError>;
 
@@ -70,6 +70,16 @@ impl From<String> for MurError {
 impl From<&str> for MurError {
 	fn from(msg: &str) -> Self {
 		MurError::Internal(msg.to_string())
+	}
+}
+
+#[cfg(feature = "diesel")]
+impl From<diesel::result::Error> for MurError {
+	fn from(err: diesel::result::Error) -> Self {
+		match err {
+			diesel::result::Error::NotFound => MurError::NotFound("Register was not found".into()),
+			_ => MurError::Internal(format!("Database error: {}", err)),
+		}
 	}
 }
 
