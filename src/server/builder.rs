@@ -65,8 +65,9 @@ impl MurServer {
 	fn build_imports_exports_container(
 		module: &dyn MurModule,
 		injects: &MurInjects,
+		base: &MurServiceContainer,
 	) -> MurServiceContainer {
-		let mut out = MurServiceContainer::new();
+		let mut out = base.clone();
 		let mut visited = HashSet::<usize>::new();
 
 		for imported in module.imports() {
@@ -210,12 +211,13 @@ impl MurServer {
 		app_global.merge(self.container);
 
 		let mut runtime_global = app_global.clone();
-		let mut controllers_to_register: Vec<std::sync::Arc<dyn MurController>> = Vec::new();
+		// let mut controllers_to_register: Vec<std::sync::Arc<dyn MurController>> = Vec::new();
 
 		for module in &self.modules {
 			module.on_init();
 
-			let mut visible = Self::build_imports_exports_container(module.as_ref(), &self.injects);
+			let mut visible =
+				Self::build_imports_exports_container(module.as_ref(), &self.injects, &app_global);
 			visible.merge(app_global.clone());
 
 			let local_services = module.services_with_injects(&self.injects, &visible);
@@ -224,9 +226,9 @@ impl MurServer {
 				visible.register_dyn_with_id(*tid, svc.clone());
 			}
 
-			for c in module.controllers_with_injects(&self.injects, &visible) {
-				controllers_to_register.push(c);
-			}
+			// for c in module.controllers_with_injects(&self.injects, &visible) {
+			// 	controllers_to_register.push(c);
+			// }
 
 			runtime_global.merge(visible);
 		}
@@ -234,9 +236,9 @@ impl MurServer {
 		let container = Arc::new(runtime_global);
 		let mut router = MurRouter::new(Arc::clone(&container));
 
-		for c in controllers_to_register {
-			router.register_controller(c);
-		}
+		// for c in controllers_to_register {
+		// 	router.register_controller(c);
+		// }
 
 		for guard in self.guards {
 			router.add_guard_boxed(guard);
