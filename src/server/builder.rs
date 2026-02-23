@@ -63,7 +63,7 @@ impl MurServer {
 	}
 
 	fn build_imports_exports_container(
-		module: &Box<dyn MurModule>,
+		module: &dyn MurModule,
 		injects: &MurInjects,
 	) -> MurServiceContainer {
 		let mut out = MurServiceContainer::new();
@@ -215,7 +215,7 @@ impl MurServer {
 		for module in &self.modules {
 			module.on_init();
 
-			let mut visible = Self::build_imports_exports_container(module, &self.injects);
+			let mut visible = Self::build_imports_exports_container(module.as_ref(), &self.injects);
 			visible.merge(app_global.clone());
 
 			let local_services = module.services_with_injects(&self.injects, &visible);

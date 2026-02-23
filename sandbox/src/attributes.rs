@@ -26,13 +26,24 @@ impl ServiceTest {
 	pub fn new() -> Self {
 		Self
 	}
+
+	pub fn get_name(&self) -> &'static str {
+		"Mur"
+	}
 }
 
-pub struct ControllerTest;
+pub struct ControllerTest {
+	service: Arc<ServiceTest>,
+}
 
 #[controller("test")]
 impl ControllerTest {
-	pub fn new(s: Arc<ServiceTest>) -> Self {
-		Self
+	pub fn new(service: Arc<ServiceTest>) -> Self {
+		Self { service }
+	}
+
+	#[get("name")]
+	async fn get_name(&self) -> MurRes {
+		mur_json!(self.service.get_name())
 	}
 }

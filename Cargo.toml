@@ -12,7 +12,7 @@ categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 members = ["cli", "macros", "sandbox"]
 
 [workspace.package]
-version = "0.8.1"
+version = "0.8.4"
 
 [lib]
 name = "murgamu"
@@ -25,7 +25,7 @@ http-body-util = "0.1"
 hyper = { version = "1.8", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 indexmap = { version = "2.2", features = ["serde"] }
-murgamu-macros = { path = "./macros", version = "0.4.0" }
+murgamu-macros = { path = "./macros", version = "0.5.0" }
 regex = "1.10"
 rustls = { version = "0.23" }
 rustls-pemfile = { version = "2.1" }
