@@ -78,7 +78,25 @@ impl From<diesel::result::Error> for MurError {
 	fn from(err: diesel::result::Error) -> Self {
 		match err {
 			diesel::result::Error::NotFound => MurError::NotFound("Register was not found".into()),
-			_ => MurError::Internal(format!("Database error: {}", err)),
+			diesel::result::Error::SerializationError(err) => MurError::BadRequest(err.to_string()),
+			diesel::result::Error::RollbackErrorOnCommit { .. } => {
+				MurError::internal("Transaction failed irrecoverably")
+			}
+			diesel::result::Error::RollbackTransaction => {
+				MurError::internal("Unexpected manual rollback outside transaction boundary")
+			}
+			diesel::result::Error::DatabaseError(kind, info) => {
+				use diesel::result::DatabaseErrorKind::*;
+
+				match kind {
+					UniqueViolation => MurError::conflict(info.message()),
+					ForeignKeyViolation => MurError::conflict(info.message()),
+					NotNullViolation => MurError::bad_request(info.message()),
+					CheckViolation => MurError::bad_request(info.message()),
+					_ => MurError::internal(info.message()),
+				}
+			}
+			_ => MurError::internal(format!("Database error: {}", err)),
 		}
 	}
 }
