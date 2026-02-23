@@ -1,7 +1,6 @@
 mod attributes;
-mod manual;
 
-use manual::ModuleTest;
+use attributes::ModuleTest;
 use murgamu::MurMainResult;
 use murgamu::MurServer;
 use murgamu::tokio;

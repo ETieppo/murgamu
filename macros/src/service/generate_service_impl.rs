@@ -6,6 +6,7 @@ use syn::{GenericArgument, ItemStruct, PathArguments, Type};
 struct InjectSpec {
 	ty: Type,
 	optional: bool,
+	via_container: bool,
 }
 
 fn extract_arc_inner(ty: &Type) -> Option<&Type> {
@@ -58,6 +59,7 @@ fn normalize_manual_inject(ty: &Type) -> InjectSpec {
 			return InjectSpec {
 				ty: arc_inner.clone(),
 				optional: true,
+				via_container: true,
 			};
 		}
 	}
@@ -66,12 +68,14 @@ fn normalize_manual_inject(ty: &Type) -> InjectSpec {
 		return InjectSpec {
 			ty: arc_inner.clone(),
 			optional: false,
+			via_container: true,
 		};
 	}
 
 	InjectSpec {
 		ty: ty.clone(),
 		optional: false,
+		via_container: false,
 	}
 }
 
@@ -85,6 +89,7 @@ fn infer_injects_from_fields(input: &ItemStruct) -> Vec<InjectSpec> {
 					return Some(InjectSpec {
 						ty: arc_inner.clone(),
 						optional: true,
+						via_container: true,
 					});
 				}
 				return None;
@@ -94,6 +99,7 @@ fn infer_injects_from_fields(input: &ItemStruct) -> Vec<InjectSpec> {
 				return Some(InjectSpec {
 					ty: arc_inner.clone(),
 					optional: false,
+					via_container: true,
 				});
 			}
 
@@ -134,7 +140,14 @@ pub fn generate_service_impl(
 		.zip(inject_vars.iter())
 		.map(|(spec, var)| {
 			let ty = &spec.ty;
-			if spec.optional {
+
+			if spec.via_container {
+				if spec.optional {
+					quote! { let #var = _container.get::<#ty>(); }
+				} else {
+					quote! { let #var = _container.get_required::<#ty>(); }
+				}
+			} else if spec.optional {
 				quote! { let #var = #injects_param.get::<#ty>(); }
 			} else {
 				quote! { let #var = #injects_param.get_required::<#ty>(); }
@@ -147,21 +160,50 @@ pub fn generate_service_impl(
 	} else {
 		quote! { Self::new(#(#inject_vars),*) }
 	};
+	let required_container_deps: Vec<TokenStream2> = injects_spec
+		.iter()
+		.filter(|spec| spec.via_container && !spec.optional)
+		.map(|spec| {
+			let ty = &spec.ty;
+			quote!(std::any::TypeId::of::<#ty>())
+		})
+		.collect();
+
+	let deps_impl = if required_container_deps.is_empty() {
+		quote! {
+			impl #impl_generics murgamu::MurDependencies for #struct_name #ty_generics #where_clause {
+				fn dependencies() -> &'static [std::any::TypeId] {
+					&[]
+				}
+			}
+		}
+	} else {
+		quote! {
+			impl #impl_generics murgamu::MurDependencies for #struct_name #ty_generics #where_clause {
+				fn dependencies() -> &'static [std::any::TypeId] {
+					static DEPS: std::sync::OnceLock<Vec<std::any::TypeId>> = std::sync::OnceLock::new();
+					DEPS.get_or_init(|| vec![#(#required_container_deps),*]).as_slice()
+				}
+			}
+		}
+	};
 
 	quote! {
 		#input
 
-		impl #impl_generics MurService for #struct_name #ty_generics #where_clause {
+		impl #impl_generics murgamu::MurService for #struct_name #ty_generics #where_clause {
 			fn as_any(&self) -> &dyn std::any::Any {
 				self
 			}
 		}
 
-		impl #impl_generics MurServiceFactory for #struct_name #ty_generics #where_clause {
-			fn create(#injects_param: &MurInjects) -> Self {
+		impl #impl_generics murgamu::MurServiceFactory for #struct_name #ty_generics #where_clause {
+			fn create(#injects_param: &murgamu::MurInjects, _container: &murgamu::MurServiceContainer) -> Self {
 				#(#inject_lets)*
 				#create_expr
 			}
 		}
+
+		#deps_impl
 	}
 }

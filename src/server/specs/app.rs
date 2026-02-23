@@ -310,13 +310,15 @@ impl MurTestAppBuilder {
 
 		let mut router = MurRouter::new(Arc::clone(&container));
 
-		for module in &self.modules {
-			for controller in module.controllers_with_injects(&self.injects) {
-				for r in controller.routes(Arc::clone(&container)) {
-					router.route(&r.method, &r.path, r.handler);
-				}
-			}
-		}
+		// TODO:
+		// FIX:
+		// for module in &self.modules {
+		// 	for controller in module.controllers_with_injects(&self.injects) {
+		// 		for r in controller.routes(Arc::clone(&container)) {
+		// 			router.route(&r.method, &r.path, r.handler);
+		// 		}
+		// 	}
+		// }
 
 		for controller in &self.controllers {
 			for r in controller.clone().routes(Arc::clone(&container)) {

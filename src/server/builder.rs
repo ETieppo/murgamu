@@ -1,3 +1,5 @@
+use crate::MurController;
+
 use super::config::MurServerConfig;
 use super::error::MurExceptionFilter;
 use super::guard::MurGuard;
@@ -204,28 +206,37 @@ impl MurServer {
 		self.config.addr = addr;
 		self.injects.on_init();
 
-		let mut global = MurServiceContainer::new();
-		global.merge(self.container);
+		let mut app_global = MurServiceContainer::new();
+		app_global.merge(self.container);
+
+		let mut runtime_global = app_global.clone();
+		let mut controllers_to_register: Vec<std::sync::Arc<dyn MurController>> = Vec::new();
 
 		for module in &self.modules {
 			module.on_init();
 
 			let mut visible = Self::build_imports_exports_container(module, &self.injects);
-			visible.merge(global.clone());
-			global.merge(visible.clone());
+			visible.merge(app_global.clone());
+
 			let local_services = module.services_with_injects(&self.injects, &visible);
 
 			for (tid, svc) in local_services.iter() {
 				visible.register_dyn_with_id(*tid, svc.clone());
 			}
 
-			for (tid, svc) in local_services {
-				global.register_dyn_with_id(tid, svc);
+			for c in module.controllers_with_injects(&self.injects, &visible) {
+				controllers_to_register.push(c);
 			}
+
+			runtime_global.merge(visible);
 		}
 
-		let container = Arc::new(global);
+		let container = Arc::new(runtime_global);
 		let mut router = MurRouter::new(Arc::clone(&container));
+
+		for c in controllers_to_register {
+			router.register_controller(c);
+		}
 
 		for guard in self.guards {
 			router.add_guard_boxed(guard);
@@ -244,7 +255,7 @@ impl MurServer {
 				println!("Loading module: {}", module.name());
 			}
 
-			for controller in module.controllers_with_injects(&self.injects) {
+			for controller in module.controllers_with_injects(&self.injects, container.as_ref()) {
 				router.register_controller(controller);
 			}
 		}

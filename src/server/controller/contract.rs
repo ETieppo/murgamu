@@ -1,3 +1,4 @@
+use crate::MurInjects;
 use crate::server::router::MurRouteDefinition;
 use crate::server::service::MurServiceContainer;
 use std::sync::Arc;
@@ -16,6 +17,10 @@ impl IntoController for Arc<dyn MurController> {
 	fn into_controller(self) -> Arc<dyn MurController> {
 		self
 	}
+}
+
+pub trait MurControllerFactory: Sized + MurController {
+	fn create(injects: &MurInjects, container: &MurServiceContainer) -> Self;
 }
 
 pub trait MurController: Send + Sync + 'static {

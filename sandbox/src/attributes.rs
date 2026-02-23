@@ -9,13 +9,21 @@ async fn main() -> MurMainResult {
 		.await
 }
 
-#[module]
+#[module()]
+pub struct ModuleX;
+
+#[module(
+	imports=[ModuleX],
+	controllers=[ControllerTest],
+  services=[ServiceTest],
+  exports=[ServiceTest]
+)]
 pub struct ModuleTest;
 
 #[service]
 pub struct ServiceTest;
 impl ServiceTest {
-	fn new() -> Self {
+	pub fn new() -> Self {
 		Self
 	}
 }
@@ -23,4 +31,8 @@ impl ServiceTest {
 pub struct ControllerTest;
 
 #[controller("test")]
-impl ControllerTest {}
+impl ControllerTest {
+	pub fn new(s: Arc<ServiceTest>) -> Self {
+		Self
+	}
+}
