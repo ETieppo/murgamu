@@ -4,8 +4,8 @@
 
 TL;DR
 
-Primeiro de tudo, é um framework como qualquer outro, que ainda não deve ser usado pra produção pelos motivos abaixo, AINDA...
-mas também compreendo que muito provavelmente eu serei o único a usar, o que torna mais interessante ainda.
+# PRUSQUÊ? DUNEIDA?
+Primeiro de tudo, é um framework como qualquer outro(ou quase isso kkkk), que ainda não deve ser usado pra produção, ainda é imaturo, inseguro e... vix, se eu continuar vai ser lista, mas também compreendo que muito provavelmente eu serei o único a usar, o que torna mais interessante ainda.
 
 Existem vários pontos que encontrei ao longo do caminho que precisam de correção, alguns mais graves e outros mais triviais, tenho evoluido na construção, a concepção até então era "vai ser só um servidor http simples, calma" e virou mais um "é... acho que ainda não sei programar...", mas caso esteja lendo isso, oq acho que não vai acontecer, tem sido divertido/estressante, achei que ia desencantar do Rust ao longo do tempo mas a linguagem é complexa o suficiente pra me manter interessado em coisas que eu ainda não sei sobre linguagens, não tinha ideia de que paralelismo + injeção de dependência em baixo nível dava tanto trabalho. Voltando pra parte de ler isso, se caso tiver vontade de criar algo, crie, me arrependi de postar isso no linkedisney poque ninguém precisa saber, e o principal, pode ser muito massa desenvolver algo complexo o suficiente e sair disso compreendendo um pouco a mais, cê tinha que ver o dia que eu descobri que o Dominio(do DDD) é ontológico 🤯. 
 
