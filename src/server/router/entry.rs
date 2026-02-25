@@ -15,8 +15,8 @@ pub struct MurRouteAccessControl {
 pub(crate) struct MurRouteEntry {
 	pub pattern: MurRoutePattern,
 	pub handler: MurRouteHandler,
-	pub guards: Vec<Arc<dyn MurGuard>>,
-	pub interceptors: Vec<Arc<dyn MurInterceptor>>,
+	pub guards: Vec<Arc<dyn MurGuard + Send + Sync>>,
+	pub interceptors: Vec<Arc<dyn MurInterceptor + Send + Sync>>,
 	pub metadata: HashMap<String, String>,
 	pub access_control: MurRouteAccessControl,
 }

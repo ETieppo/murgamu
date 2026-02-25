@@ -1,5 +1,5 @@
 use super::InMemoryStore;
-use super::RateLimitStore;
+use super::MurThrottlerStore;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl Default for SlidingWindowStore {
 	}
 }
 
-impl RateLimitStore for SlidingWindowStore {
+impl MurThrottlerStore for SlidingWindowStore {
 	fn check_and_update(&self, key: &str, max_requests: u64, window: Duration) -> (bool, u64, u64) {
 		self.inner.cleanup(window);
 

@@ -1,9 +1,9 @@
-use super::RateLimitEntry;
+use super::MurThrottlerEntry;
 use std::collections::HashMap;
 use std::sync::RwLock;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-pub trait RateLimitStore: Send + Sync + 'static {
+pub trait MurThrottlerStore: Send + Sync + 'static {
 	fn check_and_update(&self, key: &str, max_requests: u64, window: Duration) -> (bool, u64, u64);
 	fn reset(&self, key: &str);
 	fn get_status(&self, key: &str, max_requests: u64, window: Duration) -> (u64, u64, u64);
@@ -11,7 +11,7 @@ pub trait RateLimitStore: Send + Sync + 'static {
 
 #[derive(Debug)]
 pub struct InMemoryStore {
-	pub data: RwLock<HashMap<String, RateLimitEntry>>,
+	pub data: RwLock<HashMap<String, MurThrottlerEntry>>,
 	pub cleanup_interval: Duration,
 	pub last_cleanup: RwLock<Instant>,
 }
@@ -53,7 +53,7 @@ impl Default for InMemoryStore {
 	}
 }
 
-impl RateLimitStore for InMemoryStore {
+impl MurThrottlerStore for InMemoryStore {
 	fn check_and_update(&self, key: &str, max_requests: u64, window: Duration) -> (bool, u64, u64) {
 		self.cleanup(window);
 

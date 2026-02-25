@@ -12,8 +12,8 @@ pub struct MurRouteBuilder<'a> {
 	router: &'a mut MurRouter,
 	method: String,
 	path: String,
-	guards: Vec<Arc<dyn MurGuard>>,
-	interceptors: Vec<Arc<dyn MurInterceptor>>,
+	guards: Vec<Arc<dyn MurGuard + Sync + Send>>,
+	interceptors: Vec<Arc<dyn MurInterceptor + Sync + Send>>,
 	metadata: HashMap<String, String>,
 }
 

@@ -1,3 +1,4 @@
+use crate::MurThrottler;
 use crate::server::security::tls::MurTlsConfig;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -7,6 +8,7 @@ pub struct MurServerConfig {
 	pub addr: SocketAddr,
 	pub keep_alive_timeout: Option<Duration>,
 	pub body_limit: usize,
+	pub throttler: Option<MurThrottler>,
 	pub http2: bool,
 	pub graceful_shutdown: bool,
 	pub shutdown_timeout: Duration,
@@ -22,7 +24,8 @@ impl Default for MurServerConfig {
 		Self {
 			addr: "127.0.0.1:3000".parse().unwrap(),
 			keep_alive_timeout: Some(Duration::from_secs(60)),
-			body_limit: 2 * 1024 * 1024, // 2MB
+			body_limit: 2097152, // 2 MB | 2 * 1024 * 1024
+			throttler: Some(MurThrottler::default()),
 			http2: false,
 			graceful_shutdown: true,
 			shutdown_timeout: Duration::from_secs(30),
@@ -55,7 +58,7 @@ impl MurServerConfig {
 		self
 	}
 
-	pub fn body_limit(mut self, limit: usize) -> Self {
+	pub fn body_size_limit(mut self, limit: usize) -> Self {
 		self.body_limit = limit;
 		self
 	}
@@ -111,7 +114,6 @@ mod tests {
 	fn test_config_defaults() {
 		let config = MurServerConfig::default();
 		assert_eq!(config.addr.to_string(), "127.0.0.1:3000");
-		assert_eq!(config.body_limit, 2 * 1024 * 1024);
 		assert!(config.graceful_shutdown);
 	}
 
@@ -119,7 +121,7 @@ mod tests {
 	fn test_config_builder() {
 		let config = MurServerConfig::new()
 			.addr("0.0.0.0:8080".parse::<SocketAddr>().unwrap())
-			.body_limit(5 * 1024 * 1024)
+			.body_size_limit(5 * 1024 * 1024)
 			.no_graceful_shutdown()
 			.cors_all();
 

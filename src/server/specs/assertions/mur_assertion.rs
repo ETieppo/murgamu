@@ -1,5 +1,5 @@
-use super::get_json_path;
 use super::MurTestResponse;
+use super::get_json_path;
 use http::StatusCode;
 use serde_json::Value;
 use std::fmt;

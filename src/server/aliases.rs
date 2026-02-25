@@ -12,10 +12,10 @@ pub type MurMainResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub type MurRes = Result<Response<Full<Bytes>>, MurError>;
 pub type MurReq = MurRequestContext;
 pub type MurResInfallible = Result<Response<Full<Bytes>>, std::convert::Infallible>;
-pub type MurFuture = Pin<Box<dyn Future<Output = MurRes> + Send>>;
+pub type MurFuture = Pin<Box<dyn Future<Output = MurRes> + Send + 'static>>;
 pub type MurRequest = Request<Incoming>;
 pub type MurResponse = Response<Full<Bytes>>;
-pub type MurRouteHandler = Arc<dyn Fn(MurRequestContext) -> MurFuture + Send + Sync>;
+pub type MurRouteHandler = Arc<dyn Fn(MurRequestContext) -> MurFuture + Send + Sync + 'static>;
 pub type MurPathParams = HashMap<String, String>;
 pub type MurQueryParams = HashMap<String, String>;
 

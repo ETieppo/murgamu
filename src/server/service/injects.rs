@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Default)]
 pub struct MurInjects {
-	items: HashMap<TypeId, Arc<dyn MurInjectable>>,
+	items: HashMap<TypeId, Arc<dyn MurInjectable + Send + Sync>>,
 }
 
 impl MurInjects {
@@ -32,7 +32,7 @@ impl MurInjects {
 	}
 
 	#[inline]
-	pub fn get<T: MurInjectable>(&self) -> Option<Arc<T>> {
+	pub fn get<T: MurInjectable + Send + Sync>(&self) -> Option<Arc<T>> {
 		let type_id = TypeId::of::<T>();
 		self.items
 			.get(&type_id)
@@ -73,7 +73,10 @@ impl MurInjects {
 	}
 
 	#[inline]
-	fn downcast_arc<T: MurInjectable>(&self, inject: &Arc<dyn MurInjectable>) -> Option<Arc<T>> {
+	fn downcast_arc<T: MurInjectable>(
+		&self,
+		inject: &Arc<dyn MurInjectable + Send + Sync>,
+	) -> Option<Arc<T>> {
 		let any_ref: &dyn Any = inject.as_any();
 		if any_ref.downcast_ref::<T>().is_some() {
 			let ptr = Arc::as_ptr(inject) as *const T;

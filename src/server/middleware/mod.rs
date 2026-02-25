@@ -7,3 +7,6 @@ pub mod timeout;
 
 pub use contract::MurMiddleware;
 pub use contract::MurNext;
+
+pub use rate_limit::MurThrottler;
+pub use rate_limit::MurThrottlerAlgorithm;

@@ -3,8 +3,8 @@ use crate::server::aliases::MurRes;
 use crate::server::error::MurError;
 use http::StatusCode;
 use http_body_util::Full;
-use hyper::body::Bytes;
 use hyper::Response;
+use hyper::body::Bytes;
 
 pub trait MurIntoResponse {
 	fn into_response(self) -> MurRes;
@@ -14,7 +14,7 @@ impl<T: MurIntoResponse> MurIntoResponse for Result<T, MurError> {
 	fn into_response(self) -> MurRes {
 		match self {
 			Ok(v) => v.into_response(),
-			Err(e) => e.into_response(),
+			Err(e) => Err(e),
 		}
 	}
 }

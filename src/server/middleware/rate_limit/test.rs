@@ -1,25 +1,25 @@
 use super::*;
 use std::time::Duration;
 
-pub fn mur_rate_limit_per_minute(requests: u64) -> MurRateLimit {
-	MurRateLimit::new().requests(requests).per_minutes(1)
+pub fn mur_rate_limit_per_minute(requests: u64) -> MurThrottler {
+	MurThrottler::new().requests(requests).per_minutes(1)
 }
 
-pub fn mur_rate_limit_per_hour(requests: u64) -> MurRateLimit {
-	MurRateLimit::new().requests(requests).per_hours(1)
+pub fn mur_rate_limit_per_hour(requests: u64) -> MurThrottler {
+	MurThrottler::new().requests(requests).per_hours(1)
 }
 
-pub fn mur_rate_limit_strict() -> MurRateLimit {
-	MurRateLimit::new().requests(10).per_minutes(1).by_ip()
+pub fn mur_rate_limit_strict() -> MurThrottler {
+	MurThrottler::new().requests(10).per_minutes(1).by_ip()
 }
 
-pub fn mur_rate_limit_permissive() -> MurRateLimit {
-	MurRateLimit::new().requests(1000).per_minutes(1).by_ip()
+pub fn mur_rate_limit_permissive() -> MurThrottler {
+	MurThrottler::new().requests(1000).per_minutes(1).by_ip()
 }
 
 #[test]
 fn test_config_defaults() {
-	let config = RateLimitConfig::default();
+	let config = MurThrottlerConfig::default();
 	assert_eq!(config.max_requests, 100);
 	assert_eq!(config.window, Duration::from_secs(60));
 	assert!(config.include_headers);
@@ -28,7 +28,7 @@ fn test_config_defaults() {
 
 #[test]
 fn test_rate_limit_builder() {
-	let limiter = MurRateLimit::new().requests(500).per_minutes(5).by_ip();
+	let limiter = MurThrottler::new().requests(500).per_minutes(5).by_ip();
 
 	assert_eq!(limiter.config.max_requests, 500);
 	assert_eq!(limiter.config.window, Duration::from_secs(300));
@@ -91,7 +91,7 @@ fn test_token_bucket_store() {
 
 #[test]
 fn test_skip_paths() {
-	let limiter = MurRateLimit::new()
+	let limiter = MurThrottler::new()
 		.skip_path("/health")
 		.skip_path("/metrics")
 		.skip_path("/api/public/*");
@@ -106,9 +106,9 @@ fn test_skip_paths() {
 
 #[test]
 fn test_rate_limit_key_extraction() {
-	let _key = RateLimitKey::Ip;
+	let _key = MurThrottlerKey::Ip;
 
-	let _key = RateLimitKey::Global;
+	let _key = MurThrottlerKey::Global;
 }
 
 #[test]
@@ -138,19 +138,19 @@ fn test_convenience_functions() {
 
 #[test]
 fn test_rate_limit_algorithms() {
-	let limiter = MurRateLimit::new().fixed_window();
-	assert_eq!(limiter.config.algorithm, RateLimitAlgorithm::FixedWindow);
+	let limiter = MurThrottler::new().fixed_window();
+	assert_eq!(limiter.config.algorithm, MurThrottlerAlgorithm::FixedWindow);
 
-	let limiter = MurRateLimit::new().sliding_window();
-	assert_eq!(limiter.config.algorithm, RateLimitAlgorithm::SlidingWindow);
+	let limiter = MurThrottler::new().sliding_window();
+	assert_eq!(limiter.config.algorithm, MurThrottlerAlgorithm::SlidingWindow);
 
-	let limiter = MurRateLimit::new().token_bucket();
-	assert_eq!(limiter.config.algorithm, RateLimitAlgorithm::TokenBucket);
+	let limiter = MurThrottler::new().token_bucket();
+	assert_eq!(limiter.config.algorithm, MurThrottlerAlgorithm::TokenBucket);
 }
 
 #[test]
 fn test_rate_limit_clone() {
-	let limiter = MurRateLimit::new().requests(100).per_minutes(1);
+	let limiter = MurThrottler::new().requests(100).per_minutes(1);
 	let cloned = limiter.clone();
 	assert_eq!(cloned.config.max_requests, 100);
 }

@@ -1,5 +1,9 @@
+mod body;
 pub mod headers;
 pub mod tls;
+
+pub use body::PreprocessedBody;
+pub use body::limited_body_extraction;
 
 // TODO: Implement JWT support?
 // mod jwt;

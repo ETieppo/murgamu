@@ -1,44 +1,44 @@
 use crate::server::http::MurRequestContext;
 use std::sync::Arc;
 
-type RateLimitCustomType = Arc<dyn Fn(&MurRequestContext) -> Option<String> + Send + Sync>;
+type MurThrottlerCustomType = Arc<dyn Fn(&MurRequestContext) -> Option<String> + Send + Sync>;
 
 #[derive(Clone)]
-pub enum RateLimitKey {
+pub enum MurThrottlerKey {
 	Ip,
 	Header(String),
 	BearerToken,
 	IpAndHeader(String),
-	Custom(RateLimitCustomType),
+	Custom(MurThrottlerCustomType),
 	Global,
 }
 
-impl std::fmt::Debug for RateLimitKey {
+impl std::fmt::Debug for MurThrottlerKey {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			RateLimitKey::Ip => write!(f, "Ip"),
-			RateLimitKey::Header(name) => write!(f, "Header({:?})", name),
-			RateLimitKey::BearerToken => write!(f, "BearerToken"),
-			RateLimitKey::IpAndHeader(name) => write!(f, "IpAndHeader({:?})", name),
-			RateLimitKey::Custom(_) => write!(f, "Custom(<function>)"),
-			RateLimitKey::Global => write!(f, "Global"),
+			MurThrottlerKey::Ip => write!(f, "Ip"),
+			MurThrottlerKey::Header(name) => write!(f, "Header({:?})", name),
+			MurThrottlerKey::BearerToken => write!(f, "BearerToken"),
+			MurThrottlerKey::IpAndHeader(name) => write!(f, "IpAndHeader({:?})", name),
+			MurThrottlerKey::Custom(_) => write!(f, "Custom(<function>)"),
+			MurThrottlerKey::Global => write!(f, "Global"),
 		}
 	}
 }
 
-impl RateLimitKey {
+impl MurThrottlerKey {
 	pub fn extract(&self, ctx: &MurRequestContext) -> Option<String> {
 		match self {
-			RateLimitKey::Ip => Self::extract_ip(ctx),
-			RateLimitKey::Header(name) => ctx.header(name).map(|s| s.to_string()),
-			RateLimitKey::BearerToken => Self::extract_bearer_token(ctx),
-			RateLimitKey::IpAndHeader(name) => {
+			MurThrottlerKey::Ip => Self::extract_ip(ctx),
+			MurThrottlerKey::Header(name) => ctx.header(name).map(|s| s.to_string()),
+			MurThrottlerKey::BearerToken => Self::extract_bearer_token(ctx),
+			MurThrottlerKey::IpAndHeader(name) => {
 				let ip = Self::extract_ip(ctx)?;
 				let header = ctx.header(name).map(|s| s.to_string()).unwrap_or_default();
 				Some(format!("{}:{}", ip, header))
 			}
-			RateLimitKey::Custom(f) => f(ctx),
-			RateLimitKey::Global => Some("__global__".to_string()),
+			MurThrottlerKey::Custom(f) => f(ctx),
+			MurThrottlerKey::Global => Some("__global__".to_string()),
 		}
 	}
 

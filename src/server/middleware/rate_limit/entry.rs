@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 #[derive(Debug, Clone)]
-pub struct RateLimitEntry {
+pub struct MurThrottlerEntry {
 	pub count: u64,
 	pub window_start: Instant,
 	pub prev_count: u64,
@@ -9,7 +9,7 @@ pub struct RateLimitEntry {
 	pub last_refill: Instant,
 }
 
-impl RateLimitEntry {
+impl MurThrottlerEntry {
 	pub fn new() -> Self {
 		let now = Instant::now();
 		Self {
@@ -22,7 +22,7 @@ impl RateLimitEntry {
 	}
 }
 
-impl Default for RateLimitEntry {
+impl Default for MurThrottlerEntry {
 	fn default() -> Self {
 		Self::new()
 	}

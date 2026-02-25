@@ -11,19 +11,20 @@ use crate::server::http::MurRequestContext;
 use crate::server::interceptor::MurInterceptor;
 use crate::server::middleware::MurMiddleware;
 use crate::server::router::MurRouteAccessControl;
+use crate::server::security::PreprocessedBody;
 use crate::server::service::MurServiceContainer;
-use http_body_util::{BodyExt, Full};
-use hyper::body::{Bytes, Incoming};
-use hyper::{Request, Response, StatusCode};
+use http_body_util::Full;
+use hyper::body::Bytes;
+use hyper::{Response, StatusCode};
 use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct MurRouter {
 	pub(crate) routes_by_method: HashMap<String, Vec<MurRouteEntry>>,
-	pub(crate) global_guards: Vec<Arc<dyn MurGuard>>,
-	pub(crate) global_interceptors: Vec<Arc<dyn MurInterceptor>>,
-	pub(crate) global_middleware: Vec<Arc<dyn MurMiddleware>>,
-	pub(crate) exception_filters: Vec<Arc<dyn MurExceptionFilter>>,
+	pub(crate) global_guards: Vec<Arc<dyn MurGuard + Send + Sync>>,
+	pub(crate) global_interceptors: Vec<Arc<dyn MurInterceptor + Send + Sync>>,
+	pub(crate) global_middleware: Vec<Arc<dyn MurMiddleware + Send + Sync>>,
+	pub(crate) exception_filters: Vec<Arc<dyn MurExceptionFilter + Send + Sync>>,
 	pub(crate) container: Arc<MurServiceContainer>,
 	pub(crate) route_info: Vec<MurRouteInfo>,
 	pub(crate) not_found_handler: Option<MurRouteHandler>,
@@ -144,7 +145,7 @@ impl MurRouter {
 		self.global_guards.push(Arc::new(guard));
 	}
 
-	pub fn add_guard_boxed(&mut self, guard: Box<dyn MurGuard>) {
+	pub fn add_guard_boxed(&mut self, guard: Box<dyn MurGuard + Send + Sync>) {
 		self.global_guards.push(Arc::from(guard));
 	}
 
@@ -152,7 +153,7 @@ impl MurRouter {
 		self.global_interceptors.push(Arc::new(interceptor));
 	}
 
-	pub fn add_interceptor_boxed(&mut self, interceptor: Box<dyn MurInterceptor>) {
+	pub fn add_interceptor_boxed(&mut self, interceptor: Box<dyn MurInterceptor + Send + Sync>) {
 		self.global_interceptors.push(Arc::from(interceptor));
 	}
 
@@ -307,49 +308,42 @@ impl MurRouter {
 		println!();
 	}
 
-	pub async fn handle(&self, req: Request<Incoming>) -> MurRes {
-		let (parts, body) = req.into_parts();
-		let method = parts.method.to_string().to_uppercase();
-		let path = parts.uri.path();
-		let route_match = self.find_route(&method, path);
+	pub async fn handle_direct(&self, data: Result<PreprocessedBody, MurError>) -> MurRes {
+		println!("{data:?}");
+		match data {
+			Ok(preprocess) => {
+				let route_match = self.find_route(&preprocess.method, &preprocess.path);
 
-		if route_match.is_none() {
-			if method == "OPTIONS" {
-				return self.handle_options(path);
-			}
+				if route_match.is_none() {
+					if preprocess.method == "OPTIONS" {
+						return self.handle_options(preprocess.path);
+					}
 
-			if method == "HEAD"
-				&& let Some((route, params)) = self.find_route("GET", path)
-			{
-				let body_bytes = self.collect_body(body).await?;
-				let ctx =
-					MurRequestContext::new(parts, body_bytes, params, Arc::clone(&self.container));
-				return self.execute_handler(route, ctx).await;
-			}
-
-			return self.handle_not_found(path);
-		}
-
-		let (route, path_params) = route_match.unwrap();
-		let body_bytes = self.collect_body(body).await?;
-		let ctx =
-			MurRequestContext::new(parts, body_bytes, path_params, Arc::clone(&self.container));
-
-		self.execute_handler(route, ctx).await
-	}
-
-	#[inline]
-	async fn collect_body(&self, body: Incoming) -> Result<Option<Bytes>, MurError> {
-		match body.collect().await {
-			Ok(collected) => {
-				let bytes = collected.to_bytes();
-				if bytes.is_empty() {
-					Ok(None)
-				} else {
-					Ok(Some(bytes))
+					if preprocess.method == "HEAD"
+						&& let Some((route, params)) = self.find_route("GET", &preprocess.path)
+					{
+						let ctx = MurRequestContext::new(
+							preprocess.parts,
+							preprocess.body_bytes,
+							params,
+							Arc::clone(&self.container),
+						);
+						return self.execute_handler(route, ctx).await;
+					}
+					return self.handle_not_found(&preprocess.path);
 				}
+
+				let (route, path_params) = route_match.unwrap();
+				let ctx = MurRequestContext::new(
+					preprocess.parts,
+					preprocess.body_bytes,
+					path_params,
+					Arc::clone(&self.container),
+				);
+
+				self.execute_handler(route, ctx).await
 			}
-			Err(e) => Err(MurError::from(e)),
+			Err(e) => Err(e),
 		}
 	}
 
@@ -419,7 +413,7 @@ impl MurRouter {
 		}
 	}
 
-	fn handle_not_found(&self, path: &str) -> MurRes {
+	fn handle_not_found(&self, path: &String) -> MurRes {
 		if let Some(_handler) = &self.not_found_handler {
 			let parts = http::Request::builder()
 				.uri(path)
@@ -443,12 +437,12 @@ impl MurRouter {
 		}))
 	}
 
-	fn handle_options(&self, path: &str) -> MurRes {
+	fn handle_options(&self, path: String) -> MurRes {
 		let mut methods = Vec::with_capacity(8);
 
 		for (method, routes) in &self.routes_by_method {
 			for route in routes {
-				if route.pattern.match_path(path).is_some() {
+				if route.pattern.match_path(path.as_str()).is_some() {
 					methods.push(method.as_str());
 					break;
 				}
@@ -498,6 +492,6 @@ impl MurRouter {
 			return handler(error);
 		}
 
-		error.into_response()
+		Err(error)
 	}
 }

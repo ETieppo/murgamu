@@ -2,9 +2,14 @@ use super::config::MurServerConfig;
 use super::module::MurModule;
 use super::router::MurRouter;
 use super::security::tls::MurTlsAcceptor;
+use crate::MurError;
+use crate::server::security::limited_body_extraction;
 use crate::server::service::MurInjects;
+use http::{Request, Response};
+use http_body_util::Full;
+use hyper::body::{Bytes, Incoming};
 use hyper::server::conn::http1;
-use hyper::service::service_fn;
+use hyper::service::{Service, service_fn};
 use hyper_util::rt::TokioIo;
 use std::future::Future;
 use std::net::SocketAddr;
@@ -18,7 +23,7 @@ use tokio::sync::watch;
 pub struct MurServerRunner {
 	pub(crate) router: Arc<MurRouter>,
 	pub(crate) config: MurServerConfig,
-	pub(crate) modules: Vec<Box<dyn MurModule>>,
+	pub(crate) modules: Vec<Box<dyn MurModule + Send + Sync>>,
 	pub(crate) injects: MurInjects,
 	pub(crate) on_startup: Vec<Box<dyn Fn() + Send + Sync>>,
 	pub(crate) on_shutdown: Vec<Box<dyn Fn() + Send + Sync>>,
@@ -55,15 +60,40 @@ impl MurServerRunner {
 		}
 	}
 
+	fn handle(
+		router: Arc<MurRouter>,
+		rate_limit: usize,
+	) -> impl Service<
+		Request<Incoming>,
+		Response = Response<Full<Bytes>>,
+		Error = MurError,
+		Future = impl Future<Output = Result<Response<Full<Bytes>>, MurError>>,
+	> {
+		service_fn(move |req| {
+			let router = Arc::clone(&router);
+			async move {
+				match router
+					.handle_direct(limited_body_extraction(req, rate_limit).await)
+					.await
+				{
+					Ok(res) => Ok(res),
+					Err(err) => Ok(err.into_response()),
+				}
+			}
+		})
+	}
+
 	async fn run_forever(
 		self,
 		listener: TcpListener,
 	) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+		let enable_logging = self.config.enable_logging;
+		let limit = self.config.body_limit;
+
 		loop {
 			let (stream, _remote_addr) = listener.accept().await?;
 			let io = TokioIo::new(stream);
 			let router = Arc::clone(&self.router);
-			let enable_logging = self.config.enable_logging;
 
 			tokio::task::spawn(async move {
 				if enable_logging {
@@ -71,16 +101,16 @@ impl MurServerRunner {
 					// Minimal logging - can be expanded
 				}
 
-				let service = service_fn(move |req| {
-					let router = Arc::clone(&router);
-					async move { router.handle(req).await }
-				});
-
-				if let Err(err) = http1::Builder::new()
-					.serve_connection(io, service)
+				let result = http1::Builder::new()
+					.serve_connection(io, Self::handle(router, limit))
 					.with_upgrades()
-					.await && !err.to_string().contains("connection closed")
-				{
+					.await;
+
+				if let Err(err) = result {
+					if err.is_closed() {
+						return;
+					}
+
 					eprintln!("Connection error: {}", err);
 				}
 			});
@@ -95,23 +125,20 @@ impl MurServerRunner {
 
 		loop {
 			let (stream, _remote_addr) = listener.accept().await?;
-			let router = Arc::clone(&self.router);
 			let acceptor = tls_acceptor.clone();
+			let router = Arc::clone(&self.router);
 
 			tokio::task::spawn(async move {
 				match acceptor.accept(stream).await {
 					Ok(tls_stream) => {
 						let io = TokioIo::new(tls_stream);
-
-						let service = service_fn(move |req| {
-							let router = Arc::clone(&router);
-							async move { router.handle(req).await }
-						});
+						let limit = self.config.body_limit;
+						let service = Self::handle(router, limit);
 
 						if let Err(err) = http1::Builder::new()
 							.serve_connection(io, service)
 							.with_upgrades()
-							.await && !err.to_string().contains("connection closed")
+							.await && !err.is_closed()
 						{
 							eprintln!("TLS connection error: {}", err);
 						}
@@ -150,6 +177,7 @@ impl MurServerRunner {
 					match result {
 						Ok((stream, _remote_addr)) => {
 							let router = Arc::clone(&self.router);
+							let limit = self.config.body_limit;
 							let connections = Arc::clone(&active_connections);
 							let mut shutdown = shutdown_rx.clone();
 							let acceptor = tls_acceptor.clone();
@@ -159,12 +187,7 @@ impl MurServerRunner {
 								match acceptor.accept(stream).await {
 									Ok(tls_stream) => {
 										let io = TokioIo::new(tls_stream);
-
-										let service = service_fn(move |req| {
-											let router = Arc::clone(&router);
-											async move { router.handle(req).await }
-										});
-
+										let service = Self::handle(router,limit);
 										let conn = http1::Builder::new()
 											.serve_connection(io, service)
 											.with_upgrades();
@@ -174,7 +197,7 @@ impl MurServerRunner {
 										loop {
 											tokio::select! {
 												result = conn.as_mut() => {
-													if let Err(err) = result && !err.to_string().contains("connection closed") {
+													if let Err(err) = result && !err.is_closed() {
 														eprintln!("TLS connection error: {}", err);
 													}
 													break;
@@ -253,16 +276,14 @@ impl MurServerRunner {
 					match result {
 						Ok((stream, _remote_addr)) => {
 							let io = TokioIo::new(stream);
+							let limit = self.config.body_limit;
 							let router = Arc::clone(&self.router);
 							let connections = Arc::clone(&active_connections);
 							let mut shutdown = shutdown_rx.clone();
 
 							connections.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 							tokio::task::spawn(async move {
-								let service = service_fn(move |req| {
-									let router = Arc::clone(&router);
-									async move { router.handle(req).await }
-								});
+								let service = Self::handle(router,limit);
 
 								let conn = http1::Builder::new()
 									.serve_connection(io, service)
@@ -273,7 +294,7 @@ impl MurServerRunner {
 								loop {
 									tokio::select! {
 										result = conn.as_mut() => {
-											if let Err(err) = result &&!err.to_string().contains("connection closed") {
+											if let Err(err) = result &&!err.is_closed() {
 												eprintln!("Connection error: {}", err);
 											}
 											break;
@@ -356,12 +377,10 @@ impl MurServerRunner {
 						Ok((stream, _)) => {
 							let io = TokioIo::new(stream);
 							let router = Arc::clone(&self.router);
+							let limit = self.config.body_limit;
 
 							tokio::task::spawn(async move {
-								let service = service_fn(move |req| {
-									let router = Arc::clone(&router);
-									async move { router.handle(req).await }
-								});
+								let service = Self::handle(router, limit);
 
 								let _ = http1::Builder::new()
 									.serve_connection(io, service)

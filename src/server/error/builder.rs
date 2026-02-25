@@ -1,3 +1,4 @@
+use crate::MurResponse;
 use crate::server::aliases::MurRes;
 use http::StatusCode;
 use http_body_util::Full;
@@ -16,6 +17,7 @@ pub enum MurError {
 	BadRequest(String),
 	Internal(String),
 	NoEnv(&'static str),
+	PayloadTooLarge(String),
 	Custom(StatusCode, String),
 }
 
@@ -30,8 +32,15 @@ impl std::fmt::Display for MurError {
 			MurError::BadRequest(e) => write!(f, "Bad request: {}", e),
 			MurError::Internal(e) => write!(f, "Internal error: {}", e),
 			MurError::NoEnv(e) => write!(f, "No Environment Internal error: {}", e),
+			MurError::PayloadTooLarge(e) => write!(f, "Payload too large: {}", e),
 			MurError::Custom(status, e) => write!(f, "Error {}: {}", status.as_u16(), e),
 		}
+	}
+}
+
+impl From<Box<dyn std::error::Error + Send + Sync>> for MurError {
+	fn from(err: Box<dyn std::error::Error + Send + Sync>) -> Self {
+		MurError::internal(err.to_string())
 	}
 }
 
@@ -112,6 +121,7 @@ impl MurError {
 			MurError::BadRequest(_) => StatusCode::BAD_REQUEST,
 			MurError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
 			MurError::NoEnv(_) => StatusCode::INTERNAL_SERVER_ERROR,
+			MurError::PayloadTooLarge(_) => StatusCode::PAYLOAD_TOO_LARGE,
 			MurError::Custom(status, _) => *status,
 		}
 	}
@@ -126,6 +136,7 @@ impl MurError {
 			MurError::BadRequest(msg) => msg,
 			MurError::Internal(msg) => msg,
 			MurError::NoEnv(msg) => msg,
+			MurError::PayloadTooLarge(_) => "Request body exceeds the maximum allowed size",
 			MurError::Custom(_, msg) => msg,
 		}
 	}
@@ -140,6 +151,7 @@ impl MurError {
 			MurError::BadRequest(_) => "bad_request",
 			MurError::Internal(_) => "internal",
 			MurError::NoEnv(_) => "internal",
+			MurError::PayloadTooLarge(_) => "too_large",
 			MurError::Custom(_, _) => "custom",
 		}
 	}
@@ -176,6 +188,10 @@ impl MurError {
 		MurError::Custom(StatusCode::CONFLICT, msg.into())
 	}
 
+	pub fn payload_too_large(msg: impl Into<String>) -> Self {
+		MurError::PayloadTooLarge(msg.into())
+	}
+
 	pub fn gone(msg: impl Into<String>) -> Self {
 		MurError::Custom(StatusCode::GONE, msg.into())
 	}
@@ -192,7 +208,7 @@ impl MurError {
 		MurError::Custom(StatusCode::SERVICE_UNAVAILABLE, msg.into())
 	}
 
-	pub fn into_response(self) -> MurRes {
+	pub fn into_response(self) -> MurResponse {
 		let status = self.status_code();
 		let kind = self.kind();
 		let message = self.to_string();
@@ -202,7 +218,7 @@ impl MurError {
 			"kind": kind
 		});
 
-		Ok(Response::builder()
+		Response::builder()
 			.status(status)
 			.header("Content-Type", "application/json")
 			.body(Full::new(Bytes::from(
@@ -210,7 +226,7 @@ impl MurError {
 					format!(r#"{{"error":"{}","status":{}}}"#, message, status.as_u16())
 				}),
 			)))
-			.unwrap())
+			.unwrap()
 	}
 
 	pub fn into_response_with_context(self, context: serde_json::Value) -> MurRes {

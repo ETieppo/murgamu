@@ -1,8 +1,8 @@
 use super::InMemoryStore;
-use super::RateLimitAlgorithm;
-use super::RateLimitConfig;
-use super::RateLimitKey;
-use super::RateLimitStore;
+use super::MurThrottlerAlgorithm;
+use super::MurThrottlerConfig;
+use super::MurThrottlerKey;
+use super::MurThrottlerStore;
 use super::SlidingWindowStore;
 use super::TokenBucketStore;
 use crate::server::aliases::{MurFuture, MurRes};
@@ -12,24 +12,24 @@ use crate::server::middleware::{MurMiddleware, MurNext};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-pub struct MurRateLimit {
-	pub config: RateLimitConfig,
-	pub store: Arc<dyn RateLimitStore>,
+pub struct MurThrottler {
+	pub config: MurThrottlerConfig,
+	pub store: Arc<dyn MurThrottlerStore>,
 }
 
-impl MurRateLimit {
+impl MurThrottler {
 	pub fn new() -> Self {
 		Self {
-			config: RateLimitConfig::default(),
+			config: MurThrottlerConfig::default(),
 			store: Arc::new(InMemoryStore::new()),
 		}
 	}
 
-	pub fn from_config(config: RateLimitConfig) -> Self {
-		let store: Arc<dyn RateLimitStore> = match config.algorithm {
-			RateLimitAlgorithm::FixedWindow => Arc::new(InMemoryStore::new()),
-			RateLimitAlgorithm::SlidingWindow => Arc::new(SlidingWindowStore::new()),
-			RateLimitAlgorithm::TokenBucket => Arc::new(TokenBucketStore::new()),
+	pub fn from_config(config: MurThrottlerConfig) -> Self {
+		let store: Arc<dyn MurThrottlerStore> = match config.algorithm {
+			MurThrottlerAlgorithm::FixedWindow => Arc::new(InMemoryStore::new()),
+			MurThrottlerAlgorithm::SlidingWindow => Arc::new(SlidingWindowStore::new()),
+			MurThrottlerAlgorithm::TokenBucket => Arc::new(TokenBucketStore::new()),
 		};
 
 		Self { config, store }
@@ -61,27 +61,27 @@ impl MurRateLimit {
 	}
 
 	pub fn by_ip(mut self) -> Self {
-		self.config.key_extractor = RateLimitKey::Ip;
+		self.config.key_extractor = MurThrottlerKey::Ip;
 		self
 	}
 
 	pub fn by_header(mut self, name: impl Into<String>) -> Self {
-		self.config.key_extractor = RateLimitKey::Header(name.into());
+		self.config.key_extractor = MurThrottlerKey::Header(name.into());
 		self
 	}
 
 	pub fn by_bearer_token(mut self) -> Self {
-		self.config.key_extractor = RateLimitKey::BearerToken;
+		self.config.key_extractor = MurThrottlerKey::BearerToken;
 		self
 	}
 
 	pub fn by_ip_and_header(mut self, name: impl Into<String>) -> Self {
-		self.config.key_extractor = RateLimitKey::IpAndHeader(name.into());
+		self.config.key_extractor = MurThrottlerKey::IpAndHeader(name.into());
 		self
 	}
 
 	pub fn global(mut self) -> Self {
-		self.config.key_extractor = RateLimitKey::Global;
+		self.config.key_extractor = MurThrottlerKey::Global;
 		self
 	}
 
@@ -89,29 +89,29 @@ impl MurRateLimit {
 	where
 		F: Fn(&MurRequestContext) -> Option<String> + Send + Sync + 'static,
 	{
-		self.config.key_extractor = RateLimitKey::Custom(Arc::new(extractor));
+		self.config.key_extractor = MurThrottlerKey::Custom(Arc::new(extractor));
 		self
 	}
 
 	pub fn fixed_window(mut self) -> Self {
-		self.config.algorithm = RateLimitAlgorithm::FixedWindow;
+		self.config.algorithm = MurThrottlerAlgorithm::FixedWindow;
 		self.store = Arc::new(InMemoryStore::new());
 		self
 	}
 
 	pub fn sliding_window(mut self) -> Self {
-		self.config.algorithm = RateLimitAlgorithm::SlidingWindow;
+		self.config.algorithm = MurThrottlerAlgorithm::SlidingWindow;
 		self.store = Arc::new(SlidingWindowStore::new());
 		self
 	}
 
 	pub fn token_bucket(mut self) -> Self {
-		self.config.algorithm = RateLimitAlgorithm::TokenBucket;
+		self.config.algorithm = MurThrottlerAlgorithm::TokenBucket;
 		self.store = Arc::new(TokenBucketStore::new());
 		self
 	}
 
-	pub fn with_store<S: RateLimitStore>(mut self, store: S) -> Self {
+	pub fn with_store<S: MurThrottlerStore>(mut self, store: S) -> Self {
 		self.store = Arc::new(store);
 		self
 	}
@@ -209,13 +209,13 @@ impl MurRateLimit {
 	}
 }
 
-impl Default for MurRateLimit {
+impl Default for MurThrottler {
 	fn default() -> Self {
 		Self::new()
 	}
 }
 
-impl Clone for MurRateLimit {
+impl Clone for MurThrottler {
 	fn clone(&self) -> Self {
 		Self {
 			config: self.config.clone(),
@@ -224,9 +224,9 @@ impl Clone for MurRateLimit {
 	}
 }
 
-impl std::fmt::Debug for MurRateLimit {
+impl std::fmt::Debug for MurThrottler {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_struct("MurRateLimit")
+		f.debug_struct("MurTrhottler")
 			.field("max_requests", &self.config.max_requests)
 			.field("window", &self.config.window)
 			.field("algorithm", &self.config.algorithm)
@@ -234,7 +234,7 @@ impl std::fmt::Debug for MurRateLimit {
 	}
 }
 
-impl MurMiddleware for MurRateLimit {
+impl MurMiddleware for MurThrottler {
 	fn handle(&self, ctx: MurRequestContext, next: MurNext) -> MurFuture {
 		let path = ctx.path().to_string();
 
@@ -296,6 +296,6 @@ impl MurMiddleware for MurRateLimit {
 	}
 
 	fn name(&self) -> &str {
-		"MurRateLimit"
+		"MurTrhottler"
 	}
 }

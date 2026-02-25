@@ -1,4 +1,4 @@
-use super::RateLimitStore;
+use super::MurThrottlerStore;
 use std::collections::HashMap;
 use std::sync::RwLock;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -28,7 +28,7 @@ impl Default for TokenBucketStore {
 	}
 }
 
-impl RateLimitStore for TokenBucketStore {
+impl MurThrottlerStore for TokenBucketStore {
 	fn check_and_update(&self, key: &str, max_requests: u64, window: Duration) -> (bool, u64, u64) {
 		let now = Instant::now();
 		let mut data = self.data.write().unwrap();

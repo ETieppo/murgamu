@@ -10,7 +10,7 @@ use std::time::Duration;
 
 pub struct MurHealthBuilder {
 	config: MurHealthConfig,
-	indicators: Vec<(String, Arc<dyn MurHealthIndicator>)>,
+	indicators: Vec<(String, Arc<dyn MurHealthIndicator + Send + Sync>)>,
 	readiness_indicators: Vec<String>,
 }
 

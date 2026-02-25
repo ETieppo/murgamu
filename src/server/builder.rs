@@ -1,5 +1,4 @@
 use super::config::MurServerConfig;
-use super::error::MurExceptionFilter;
 use super::guard::MurGuard;
 use super::interceptor::MurInterceptor;
 use super::middleware::MurMiddleware;
@@ -17,13 +16,12 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 pub struct MurServer {
-	modules: Vec<Box<dyn MurModule>>,
+	modules: Vec<Box<dyn MurModule + Send + Sync>>,
 	container: MurServiceContainer,
 	injects: MurInjects,
-	guards: Vec<Box<dyn MurGuard>>,
-	interceptors: Vec<Box<dyn MurInterceptor>>,
-	middleware: Vec<Box<dyn MurMiddleware>>,
-	exception_filters: Vec<Box<dyn MurExceptionFilter>>,
+	guards: Vec<Box<dyn MurGuard + Sync + Send>>,
+	interceptors: Vec<Box<dyn MurInterceptor + Sync + Send>>,
+	middleware: Vec<Box<dyn MurMiddleware + Sync + Send>>,
 	config: MurServerConfig,
 	on_startup: Vec<Box<dyn Fn() + Send + Sync>>,
 	on_shutdown: Vec<Box<dyn Fn() + Send + Sync>>,
@@ -38,7 +36,6 @@ impl MurServer {
 			injects: MurInjects::new(),
 			interceptors: Vec::new(),
 			middleware: Vec::new(),
-			exception_filters: Vec::new(),
 			config: MurServerConfig::default(),
 			on_startup: Vec::new(),
 			on_shutdown: Vec::new(),
@@ -53,7 +50,6 @@ impl MurServer {
 			guards: Vec::new(),
 			interceptors: Vec::new(),
 			middleware: Vec::new(),
-			exception_filters: Vec::new(),
 			config,
 			on_startup: Vec::new(),
 			on_shutdown: Vec::new(),
@@ -76,7 +72,7 @@ impl MurServer {
 	}
 
 	fn fill_exports_rec_arc(
-		module: Arc<dyn MurModule>,
+		module: Arc<dyn MurModule + Send + Sync>,
 		injects: &MurInjects,
 		out: &mut MurServiceContainer,
 		visited: &mut HashSet<usize>,
@@ -130,17 +126,12 @@ impl MurServer {
 		self
 	}
 
-	pub fn add_exception_filter(mut self, filter: impl MurExceptionFilter + 'static) -> Self {
-		self.exception_filters.push(Box::new(filter));
-		self
-	}
-
-	pub fn service<T: MurService>(mut self, service: T) -> Self {
+	pub fn service<T: MurService + Send + Sync>(mut self, service: T) -> Self {
 		self.container.register(service);
 		self
 	}
 
-	pub fn service_arc<T: MurService>(mut self, service: Arc<T>) -> Self {
+	pub fn service_arc<T: MurService + Send + Sync>(mut self, service: Arc<T>) -> Self {
 		self.container.register_arc(service);
 		self
 	}
@@ -150,7 +141,7 @@ impl MurServer {
 		self
 	}
 
-	pub fn addr(mut self, addr: impl Into<SocketAddr>) -> Self {
+	pub fn addr(mut self, addr: impl Into<SocketAddr> + Send + Sync) -> Self {
 		self.config.addr = addr.into();
 		self
 	}
@@ -239,15 +230,12 @@ impl MurServer {
 		// }
 
 		for guard in self.guards {
+			// router.add_guard_boxed(guard.create(&self.injects));
 			router.add_guard_boxed(guard);
 		}
 
 		for interceptor in self.interceptors {
 			router.add_interceptor_boxed(interceptor);
-		}
-
-		for filter in self.exception_filters {
-			router.exception_filters.push(Arc::from(filter));
 		}
 
 		for module in &self.modules {

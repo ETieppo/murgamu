@@ -13,7 +13,7 @@ use tokio::task::JoinSet;
 #[derive(Clone)]
 pub struct MurHealthCheck {
 	pub config: Arc<MurHealthConfig>,
-	pub indicators: Arc<Vec<(String, Arc<dyn MurHealthIndicator>)>>,
+	pub indicators: Arc<Vec<(String, Arc<dyn MurHealthIndicator + Send + Sync>)>>,
 	pub readiness_indicators: Arc<Vec<String>>,
 }
 
@@ -63,7 +63,7 @@ impl MurHealthCheck {
 
 	async fn run_indicators(
 		&self,
-		indicators: &[(String, Arc<dyn MurHealthIndicator>)],
+		indicators: &[(String, Arc<dyn MurHealthIndicator + Send + Sync>)],
 	) -> MurHealthResponse {
 		let start = Instant::now();
 		let mut response = MurHealthResponse::healthy();

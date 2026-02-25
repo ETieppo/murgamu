@@ -1,19 +1,19 @@
-use super::RateLimitKey;
+use super::MurThrottlerKey;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RateLimitAlgorithm {
+pub enum MurThrottlerAlgorithm {
 	FixedWindow,
 	SlidingWindow,
 	TokenBucket,
 }
 
 #[derive(Debug, Clone)]
-pub struct RateLimitConfig {
+pub struct MurThrottlerConfig {
 	pub max_requests: u64,
 	pub window: Duration,
-	pub key_extractor: RateLimitKey,
-	pub algorithm: RateLimitAlgorithm,
+	pub key_extractor: MurThrottlerKey,
+	pub algorithm: MurThrottlerAlgorithm,
 	pub message: Option<String>,
 	pub include_headers: bool,
 	pub skip_paths: Vec<String>,
@@ -21,13 +21,13 @@ pub struct RateLimitConfig {
 	pub status_code: u16,
 }
 
-impl Default for RateLimitConfig {
+impl Default for MurThrottlerConfig {
 	fn default() -> Self {
 		Self {
 			max_requests: 100,
 			window: Duration::from_secs(60),
-			key_extractor: RateLimitKey::Ip,
-			algorithm: RateLimitAlgorithm::FixedWindow,
+			key_extractor: MurThrottlerKey::Ip,
+			algorithm: MurThrottlerAlgorithm::FixedWindow,
 			message: None,
 			include_headers: true,
 			skip_paths: Vec::new(),

@@ -19,7 +19,7 @@ impl IntoController for Arc<dyn MurController> {
 	}
 }
 
-pub trait MurControllerFactory: Sized + MurController {
+pub trait MurControllerFactory: Sized + MurController + Sync + Send {
 	fn create(injects: &MurInjects, container: &MurServiceContainer) -> Self;
 }
 

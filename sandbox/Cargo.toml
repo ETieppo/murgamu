@@ -6,3 +6,4 @@ publish = false
 
 [dependencies]
 murgamu = { path = ".." }
+serde = "1.0.228"
