@@ -1,6 +1,4 @@
-segue o lifecycle da little nightmare
-
-Criado pra ter uma visão macro do fluxo onde será possível, e manualmente encontrar possiveis erros e principalmente reconhecer áreas de risco e implementação de testes, compreendo que isso não substitui boas ferramentas de benchmarks como k6, vgrant e por ai vai, algumas mais simples(como as citadas) já foram usadas e as demais ainda estão planejadas, no momento ainda não sei como aplicar todos os testes necessários e isso causa falso negativo, portanto o que me resta é paciência, dei destaque a algumas coisas que a ia gerou.
+Criado pra ter uma visão macro do fluxo onde será possível, e manualmente encontrar possiveis erros e principalmente reconhecer áreas de risco e implementação de testes, compreendo que isso não substitui boas ferramentas de benchmarks como k6, vagrant e por ai vai, algumas mais simples(como as citadas) já foram usadas e as demais ainda estão planejadas, no momento ainda não sei como aplicar todos os testes necessários e isso causa falso negativo, portanto o que me resta é paciência, dei destaque a algumas coisas que a ia gerou.
 
 # AI GENERATED FILE!
 # Murgamü — Ciclo de Vida Completo de uma Requisição POST

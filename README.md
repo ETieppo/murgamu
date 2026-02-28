@@ -1,12 +1,12 @@
 ```
- __  __                                 _   _ 
+ __  __                                 _   _
 |  \/  |_   _ _ __ __ _  __ _ _ __ ___ (_) (_)
 | |\/| | | | | '__/ _` |/ _` | '_ ` _ \| | | |
 | |  | | |_| | | | (_| | (_| | | | | | | |_| |
 |_|  |_|\__,_|_|  \__, |\__,_|_| |_| |_|\__,_|
-                 |___/                       
+                 |___/
 ```
-                  
+
 This is just another backend framework in Rust created by me to solve my problems the way I personally wanted.
 Mumrgaü was not created to be highly performant — my application could even have been written in Node.js/Bun.js (like Nest.js). Even so, due to the language and in benchmarks, it achieves good results. Still, I do not recommend it for production. The project is in its early stages and requires many tests and guarantees that I still intend to implement. This will take time.
 It became a public API mainly because it allows me to manage dependencies more easily.
@@ -14,11 +14,8 @@ I recommend using Actix, Axum, Ntex or Rocket instead — they provide validated
 The framework looks unusual compared to common Rust paradigms — this is intentional. The goal is to enforce dependency injection and to be opinionated about how code is written and structured. Rust itself is strict, but not strict enough in some areas.
 There are still parts I haven't fully mastered. You may encounter patterns that allow improper thread usage or dependency sharing between modules. These are cases I still don't fully understand how to safely isolate. It will require time and refactoring.
 
-# Porque?
-clica [aqui LITTLE_NIGHTMARE.md](LITTLE_NIGHTMARE.md) que eu te conto
-
-
 # How do I use?
+
 you need to have rust installed [rust-lang.org](https://rust-lang.org/tools/install/)
 then
 
