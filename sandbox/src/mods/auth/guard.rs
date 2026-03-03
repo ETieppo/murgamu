@@ -12,6 +12,8 @@ impl GlobalGuard {
 	}
 
 	pub async fn can_activate(&self, ctx: &MurRequestContext) -> bool {
-		self.token_service.validate_token().await
+		self.token_service
+			.validate_token(ctx.cookies())
+			.await
 	}
 }

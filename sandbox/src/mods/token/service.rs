@@ -1,3 +1,5 @@
+use std::hash::RandomState;
+
 use murgamu::prelude::*;
 
 #[service]
@@ -9,8 +11,7 @@ impl TokenService {
 	}
 
 	// TODO: service stopped to require self param
-	pub async fn validate_token(&self) -> bool {
-		false
+	pub async fn validate_token(&self, cookies: HashMap<String, String, RandomState>) -> bool {
+		cookies.contains_key("authorization")
 	}
 }
-
