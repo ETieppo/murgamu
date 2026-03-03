@@ -1,5 +1,7 @@
 mod mods;
 
+use crate::mods::auth::GlobalGuard;
+use crate::mods::token::TokenModule;
 use mods::app::AppModule;
 use murgamu::MurMainResult;
 use murgamu::MurServer;
@@ -9,8 +11,10 @@ use murgamu::prelude::*;
 #[murgamu::main]
 async fn main() -> MurMainResult {
 	MurServer::new()
+		.guard::<GlobalGuard>()
 		.service(InjectNameService)
 		.module(AppModule::new())
+		.module(TokenModule::new())
 		.bind("127.0.0.1:3000")?
 		.run()
 		.await
