@@ -1,14 +1,14 @@
 use super::MockGuard;
 use crate::server::http::MurRequestContext;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
-type CheckFnType = Arc<dyn Fn(&MurRequestContext) -> bool + Send + Sync>;
+type CanActivateFnType = Arc<dyn Fn(&MurRequestContext) -> bool + Send + Sync>;
 
 pub struct MockGuardBuilder {
 	name: String,
 	allow: bool,
-	check_fn: Option<CheckFnType>,
+	can_activate_fn: Option<CanActivateFnType>,
 }
 
 impl MockGuardBuilder {
@@ -16,7 +16,7 @@ impl MockGuardBuilder {
 		Self {
 			name: "MockGuard".to_string(),
 			allow: true,
-			check_fn: None,
+			can_activate_fn: None,
 		}
 	}
 
@@ -27,19 +27,20 @@ impl MockGuardBuilder {
 
 	pub fn allow_all(mut self) -> Self {
 		self.allow = true;
-		self.check_fn = None;
+		self.can_activate_fn = None;
 		self
 	}
 
 	pub fn deny_all(mut self) -> Self {
 		self.allow = false;
-		self.check_fn = None;
+		self.can_activate_fn = None;
 		self
 	}
 
 	pub fn require_header(mut self, header: impl Into<String>) -> Self {
 		let header = header.into();
-		self.check_fn = Some(Arc::new(move |ctx| ctx.header(&header).is_some()));
+		self.can_activate_fn =
+			Some(Arc::new(move |ctx| ctx.header(&header).is_some()));
 		self
 	}
 
@@ -50,7 +51,7 @@ impl MockGuardBuilder {
 	) -> Self {
 		let header = header.into();
 		let value = value.into();
-		self.check_fn = Some(Arc::new(move |ctx| {
+		self.can_activate_fn = Some(Arc::new(move |ctx| {
 			ctx.header(&header).map(|h| h == value).unwrap_or(false)
 		}));
 		self
@@ -60,7 +61,7 @@ impl MockGuardBuilder {
 	where
 		F: Fn(&MurRequestContext) -> bool + Send + Sync + 'static,
 	{
-		self.check_fn = Some(Arc::new(check));
+		self.can_activate_fn = Some(Arc::new(check));
 		self
 	}
 
@@ -68,7 +69,7 @@ impl MockGuardBuilder {
 		let guard = MockGuard::named(self.name);
 		guard.allow.store(self.allow, Ordering::SeqCst);
 		MockGuard {
-			check_fn: self.check_fn,
+			can_activate_fn: self.can_activate_fn,
 			..guard
 		}
 	}

@@ -1,7 +1,10 @@
 use crate::types::{ParamInfo, ParamKind};
 use {proc_macro2::TokenStream, quote::quote, syn::Ident};
 
-pub fn generate_handler_code(method_name: &Ident, params: &[ParamInfo]) -> TokenStream {
+pub fn generate_handler_code(
+	method_name: &Ident,
+	params: &[ParamInfo],
+) -> TokenStream {
 	let mut extractions = Vec::new();
 	let mut call_args = Vec::new();
 
@@ -16,10 +19,10 @@ pub fn generate_handler_code(method_name: &Ident, params: &[ParamInfo]) -> Token
 				call_args.push(quote!(#name));
 				quote! {
 				  let #name: MurJson<#inner_ty> = match ctx.json() {
-					Ok(data) => MurJson(data),
-					Err(e) => {
-					  return MurResponder::error(&format!("Failed to parse JSON: {}", e));
-					}
+						Ok(data) => MurJson(data),
+						Err(e) => {
+						  return MurResponder::error(&format!("Failed to parse JSON: {}", e));
+						}
 				  };
 				}
 			}
@@ -143,16 +146,15 @@ pub fn generate_handler_code(method_name: &Ident, params: &[ParamInfo]) -> Token
 	}
 
 	quote! {
-		 {
-		   let controller_clone = controller.clone();
-		   Arc::new(move |ctx: MurRequestContext| -> MurFuture {
-	   let controller = controller_clone.clone();
-	   Box::pin(async move {
-		 #(#extractions)*
-		 controller.#method_name(#(#call_args),*).await
-	   })
-	   })
-	as MurRouteHandler
-		 }
-	   }
+		{
+		  let controller_clone = controller.clone();
+		  Arc::new(move |ctx: MurRequestContext| -> MurFuture {
+			  let controller = controller_clone.clone();
+			  Box::pin(async move {
+					#(#extractions)*
+					controller.#method_name(#(#call_args),*).await
+			  })
+		  }) as MurRouteHandler
+		}
+	}
 }

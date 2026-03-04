@@ -10,7 +10,7 @@ use std::pin::Pin;
 pub type MurGuardFuture<'a> = Pin<Box<dyn Future<Output = bool> + Send + 'a>>;
 
 pub trait MurGuard: Send + Sync + 'static {
-	fn can_activate<'a>(&'a self, ctx: &'a MurRequestContext) -> MurGuardFuture<'a>;
+	fn check_can_activate<'a>(&'a self, ctx: &'a MurRequestContext) -> MurGuardFuture<'a>;
 
 	fn rejection_response(&self) -> MurRes {
 		MurHttpResponse::forbidden().json(serde_json::json!({

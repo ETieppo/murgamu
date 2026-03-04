@@ -99,15 +99,17 @@ impl MurHealthBuilder {
 		self
 	}
 
-	pub fn check<F>(self, name: impl Into<String>, check_fn: F) -> Self
+	pub fn check<F>(self, name: impl Into<String>, can_activate_fn: F) -> Self
 	where
-		F: Fn() -> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send>>
+		F: Fn()
+				-> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send>>
 			+ Send
 			+ Sync
 			+ 'static,
 	{
 		let name_str: String = name.into();
-		let indicator = MurCustomIndicator::new(name_str.clone(), check_fn);
+		let indicator =
+			MurCustomIndicator::new(name_str.clone(), can_activate_fn);
 		self.indicator(name_str, indicator)
 	}
 

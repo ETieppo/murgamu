@@ -1,23 +1,15 @@
-use crate::core::{InjectSpec, infer_injects_from_fields, normalize_manual_inject};
+use crate::core::{InjectSpec, infer_injects_from_fields};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Ident, ImplGenerics, ItemStruct, Type, TypeGenerics, WhereClause};
+use syn::{Ident, ImplGenerics, ItemStruct, TypeGenerics, WhereClause};
 
-pub fn gen_deps_impl(
+pub fn implments_struct_mur_dependencies(
 	input: &ItemStruct,
 	struct_name: &Ident,
 	impl_generics: &ImplGenerics<'_>,
 	ty_generics: &TypeGenerics<'_>,
 	where_clause: Option<&WhereClause>,
-) -> (
-	TokenStream,
-	TokenStream,
-	Vec<TokenStream>,
-	Vec<TokenStream>,
-	Vec<Ident>,
-	Ident,
-	Vec<InjectSpec>,
-) {
+) -> (TokenStream, TokenStream, Vec<TokenStream>, Ident) {
 	let injects_spec: Vec<InjectSpec> = infer_injects_from_fields(input);
 	let injects_param = if injects_spec.is_empty() {
 		format_ident!("_injects")
@@ -85,13 +77,5 @@ pub fn gen_deps_impl(
 		}
 	};
 
-	(
-		deps_impl,
-		create_expr,
-		required_container_deps,
-		inject_lets,
-		inject_vars,
-		injects_param,
-		injects_spec,
-	)
+	(deps_impl, create_expr, inject_lets, injects_param)
 }

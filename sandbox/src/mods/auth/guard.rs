@@ -1,4 +1,4 @@
-use crate::mods::token::{TokenModule, TokenService};
+use crate::mods::token::TokenService;
 use murgamu::prelude::*;
 
 #[guard]
@@ -12,8 +12,6 @@ impl GlobalGuard {
 	}
 
 	pub async fn can_activate(&self, ctx: &MurRequestContext) -> bool {
-		self.token_service
-			.validate_token(ctx.cookies())
-			.await
+		self.token_service.validate_token(ctx.cookies()).await
 	}
 }

@@ -17,10 +17,10 @@ impl ProjectGenerator {
 		self.gen_dir()?;
 		self.gen_files()?;
 
-		println!("\n✨ '{}' successfully created!\n", self.project_name);
-		println!("🚀 Next steps:");
-		println!("   cd {}", self.project_name);
-		println!("   mur dev\n");
+		println!("\n🕯️ '{}' successfully created!\n", self.project_name);
+		println!("Next steps:");
+		println!("cd {}", self.project_name);
+		println!("mur dev\n");
 		Ok(())
 	}
 

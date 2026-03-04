@@ -95,11 +95,18 @@ impl MurRequestContext {
 		self.query_map().get(name).map(|s| s.as_str())
 	}
 
-	pub fn query_param_or<'a>(&'a self, name: &str, default: &'a str) -> &'a str {
+	pub fn query_param_or<'a>(
+		&'a self,
+		name: &str,
+		default: &'a str,
+	) -> &'a str {
 		self.query_param(name).unwrap_or(default)
 	}
 
-	pub fn query_param_as<T: std::str::FromStr>(&self, name: &str) -> Option<T> {
+	pub fn query_param_as<T: std::str::FromStr>(
+		&self,
+		name: &str,
+	) -> Option<T> {
 		self.query_param(name).and_then(|s| s.parse().ok())
 	}
 
@@ -127,11 +134,7 @@ impl MurRequestContext {
 		self.header("Cookie").and_then(|cookies| {
 			cookies.split(';').map(|s| s.trim()).find_map(|cookie| {
 				let (key, value) = cookie.split_once('=')?;
-				if key == name {
-					Some(value)
-				} else {
-					None
-				}
+				if key == name { Some(value) } else { None }
 			})
 		})
 	}
@@ -241,10 +244,9 @@ impl MurRequestContext {
 	}
 
 	pub fn json<T: DeserializeOwned>(&self) -> Result<T, MurError> {
-		let body = self
-			.body
-			.as_ref()
-			.ok_or_else(|| MurError::BadRequest("Missing request body".to_string()))?;
+		let body = self.body.as_ref().ok_or_else(|| {
+			MurError::BadRequest("Missing request body".to_string())
+		})?;
 
 		serde_json::from_slice(body)
 			.map_err(|e| MurError::BadRequest(format!("Invalid JSON: {}", e)))
@@ -255,19 +257,20 @@ impl MurRequestContext {
 	}
 
 	pub fn body_string(&self) -> Result<String, MurError> {
-		let body = self
-			.body
-			.as_ref()
-			.ok_or_else(|| MurError::BadRequest("Missing request body".to_string()))?;
+		let body = self.body.as_ref().ok_or_else(|| {
+			MurError::BadRequest("Missing request body".to_string())
+		})?;
 
-		String::from_utf8(body.to_vec())
-			.map_err(|e| MurError::BadRequest(format!("Invalid UTF-8 in body: {}", e)))
+		String::from_utf8(body.to_vec()).map_err(|e| {
+			MurError::BadRequest(format!("Invalid UTF-8 in body: {}", e))
+		})
 	}
 
 	pub fn form<T: DeserializeOwned>(&self) -> Result<T, MurError> {
 		let body = self.body_string()?;
-		serde_urlencoded::from_str(&body)
-			.map_err(|e| MurError::BadRequest(format!("Invalid form data: {}", e)))
+		serde_urlencoded::from_str(&body).map_err(|e| {
+			MurError::BadRequest(format!("Invalid form data: {}", e))
+		})
 	}
 
 	pub fn has_body(&self) -> bool {
@@ -308,11 +311,15 @@ impl MurRequestContext {
 
 	pub fn typed_query<T: DeserializeOwned>(&self) -> Result<T, MurError> {
 		let query = self.parts.uri.query().unwrap_or("");
-		serde_urlencoded::from_str(query)
-			.map_err(|e| MurError::BadRequest(format!("Failed to parse query params: {}", e)))
+		serde_urlencoded::from_str(query).map_err(|e| {
+			MurError::BadRequest(format!("Failed to parse query params: {}", e))
+		})
 	}
 
-	pub fn with_access_control(mut self, access_control: MurRouteAccessControl) -> Self {
+	pub fn with_access_control(
+		mut self,
+		access_control: MurRouteAccessControl,
+	) -> Self {
 		self.access_control = Some(access_control);
 		self
 	}
@@ -331,7 +338,9 @@ impl MurRequestContext {
 	pub fn has_allowed_role(&self, role: &str) -> bool {
 		self.access_control
 			.as_ref()
-			.map(|ac| ac.allowed_roles.is_empty() || ac.allowed_roles.contains(role))
+			.map(|ac| {
+				ac.allowed_roles.is_empty() || ac.allowed_roles.contains(role)
+			})
 			.unwrap_or(true)
 	}
 }

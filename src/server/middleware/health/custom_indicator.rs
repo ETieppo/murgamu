@@ -6,21 +6,25 @@ use std::time::Duration;
 
 pub struct MurCustomIndicator<F>
 where
-	F: Fn() -> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send>> + Send + Sync,
+	F: Fn() -> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send>>
+		+ Send
+		+ Sync,
 {
 	name: String,
-	check_fn: F,
+	can_activate_fn: F,
 	timeout: Duration,
 }
 
 impl<F> MurCustomIndicator<F>
 where
-	F: Fn() -> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send>> + Send + Sync,
+	F: Fn() -> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send>>
+		+ Send
+		+ Sync,
 {
-	pub fn new(name: impl Into<String>, check_fn: F) -> Self {
+	pub fn new(name: impl Into<String>, can_activate_fn: F) -> Self {
 		Self {
 			name: name.into(),
-			check_fn,
+			can_activate_fn,
 			timeout: Duration::from_secs(5),
 		}
 	}
@@ -38,8 +42,10 @@ where
 		+ Sync
 		+ 'static,
 {
-	fn check(&self) -> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send + '_>> {
-		(self.check_fn)()
+	fn check(
+		&self,
+	) -> Pin<Box<dyn Future<Output = MurHealthIndicatorResult> + Send + '_>> {
+		(self.can_activate_fn)()
 	}
 
 	fn name(&self) -> &str {

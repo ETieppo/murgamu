@@ -34,7 +34,6 @@ impl AppController {
 
 	#[post("/create")]
 	async fn receive_body(&self, b:MurBody) -> MurRes {
-		println!("{b:?}");
 		mur_json!("body received")
 	}
 }

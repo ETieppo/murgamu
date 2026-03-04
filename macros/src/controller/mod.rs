@@ -1,5 +1,6 @@
 mod controller_impl;
 mod generate_handler;
+mod get_base_path;
 mod methods;
 
 pub use controller_impl::controller_impl;

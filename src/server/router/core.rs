@@ -24,18 +24,22 @@ pub struct MurRouter {
 	pub(crate) global_guards: Vec<Arc<dyn MurGuard + Send + Sync>>,
 	pub(crate) global_interceptors: Vec<Arc<dyn MurInterceptor + Send + Sync>>,
 	pub(crate) global_middleware: Vec<Arc<dyn MurMiddleware + Send + Sync>>,
-	pub(crate) exception_filters: Vec<Arc<dyn MurExceptionFilter + Send + Sync>>,
+	pub(crate) exception_filters:
+		Vec<Arc<dyn MurExceptionFilter + Send + Sync>>,
 	pub(crate) container: Arc<MurServiceContainer>,
 	pub(crate) route_info: Vec<MurRouteInfo>,
 	pub(crate) not_found_handler: Option<MurRouteHandler>,
-	pub(crate) error_handler: Option<Arc<dyn Fn(MurError) -> MurRes + Send + Sync>>,
+	pub(crate) error_handler:
+		Option<Arc<dyn Fn(MurError) -> MurRes + Send + Sync>>,
 	pub(crate) registered_methods: Vec<String>,
 }
 
 impl MurRouter {
 	pub fn new(container: Arc<MurServiceContainer>) -> Self {
 		let mut routes_by_method = HashMap::with_capacity(8);
-		for method in &["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"] {
+		for method in
+			&["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+		{
 			routes_by_method.insert(method.to_string(), Vec::new());
 		}
 
@@ -86,7 +90,12 @@ impl MurRouter {
 		self.sort_all_routes();
 	}
 
-	pub fn route(&mut self, method: &str, path: &str, handler: MurRouteHandler) {
+	pub fn route(
+		&mut self,
+		method: &str,
+		path: &str,
+		handler: MurRouteHandler,
+	) {
 		let method = method.to_uppercase();
 		let pattern = MurRoutePattern::new(path);
 		let entry = MurRouteEntry::new(pattern, handler);
@@ -149,11 +158,17 @@ impl MurRouter {
 		self.global_guards.push(Arc::from(guard));
 	}
 
-	pub fn add_interceptor(&mut self, interceptor: impl MurInterceptor + 'static) {
+	pub fn add_interceptor(
+		&mut self,
+		interceptor: impl MurInterceptor + 'static,
+	) {
 		self.global_interceptors.push(Arc::new(interceptor));
 	}
 
-	pub fn add_interceptor_boxed(&mut self, interceptor: Box<dyn MurInterceptor + Send + Sync>) {
+	pub fn add_interceptor_boxed(
+		&mut self,
+		interceptor: Box<dyn MurInterceptor + Send + Sync>,
+	) {
 		self.global_interceptors.push(Arc::from(interceptor));
 	}
 
@@ -178,7 +193,11 @@ impl MurRouter {
 		None
 	}
 
-	pub fn find_route_params(&self, method: &str, path: &str) -> Option<MurPathParams> {
+	pub fn find_route_params(
+		&self,
+		method: &str,
+		path: &str,
+	) -> Option<MurPathParams> {
 		let method = method.to_uppercase();
 		if let Some(routes) = self.routes_by_method.get(&method) {
 			for route in routes {
@@ -190,7 +209,10 @@ impl MurRouter {
 		None
 	}
 
-	pub fn add_exception_filter(&mut self, filter: impl MurExceptionFilter + 'static) {
+	pub fn add_exception_filter(
+		&mut self,
+		filter: impl MurExceptionFilter + 'static,
+	) {
 		self.exception_filters.push(Arc::new(filter));
 	}
 
@@ -229,7 +251,8 @@ impl MurRouter {
 		let mut idx = 0;
 
 		for info in self.route_info() {
-			let size = info.controller.len() + info.method.len() + info.path.len();
+			let size =
+				info.controller.len() + info.method.len() + info.path.len();
 			if size > max_width {
 				max_width = size;
 			}
@@ -308,11 +331,14 @@ impl MurRouter {
 		println!();
 	}
 
-	pub async fn handle_direct(&self, data: Result<PreprocessedBody, MurError>) -> MurRes {
-		println!("{data:?}");
+	pub async fn handle_direct(
+		&self,
+		data: Result<PreprocessedBody, MurError>,
+	) -> MurRes {
 		match data {
 			Ok(preprocess) => {
-				let route_match = self.find_route(&preprocess.method, &preprocess.path);
+				let route_match =
+					self.find_route(&preprocess.method, &preprocess.path);
 
 				if route_match.is_none() {
 					if preprocess.method == "OPTIONS" {
@@ -320,7 +346,8 @@ impl MurRouter {
 					}
 
 					if preprocess.method == "HEAD"
-						&& let Some((route, params)) = self.find_route("GET", &preprocess.path)
+						&& let Some((route, params)) =
+							self.find_route("GET", &preprocess.path)
 					{
 						let ctx = MurRequestContext::new(
 							preprocess.parts,
@@ -347,17 +374,21 @@ impl MurRouter {
 		}
 	}
 
-	async fn execute_handler(&self, route: &MurRouteEntry, ctx: MurRequestContext) -> MurRes {
+	async fn execute_handler(
+		&self,
+		route: &MurRouteEntry,
+		ctx: MurRequestContext,
+	) -> MurRes {
 		let ctx = ctx.with_access_control(route.access_control.clone());
 
 		for guard in &self.global_guards {
-			if !guard.can_activate(&ctx).await {
+			if !guard.check_can_activate(&ctx).await {
 				return guard.rejection_response();
 			}
 		}
 
 		for guard in &route.guards {
-			if !guard.can_activate(&ctx).await {
+			if !guard.check_can_activate(&ctx).await {
 				return guard.rejection_response();
 			}
 		}
@@ -392,7 +423,11 @@ impl MurRouter {
 	}
 
 	#[inline]
-	fn find_route(&self, method: &str, path: &str) -> Option<(&MurRouteEntry, MurPathParams)> {
+	fn find_route(
+		&self,
+		method: &str,
+		path: &str,
+	) -> Option<(&MurRouteEntry, MurPathParams)> {
 		let routes = self.routes_by_method.get(method)?;
 
 		for route in routes {

@@ -104,6 +104,7 @@ pub use server::decorator::MurDecorator;
 pub use server::error::MurError;
 pub use server::error::MurExceptionFilter;
 pub use server::guard::MurGuard;
+pub use server::guard::MurGuardFactory;
 pub use server::guard::MurGuardFuture;
 pub use server::guard::MurGuardSync;
 pub use server::http::MurBody;

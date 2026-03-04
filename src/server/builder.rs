@@ -1,3 +1,5 @@
+use crate::MurGuardFactory;
+
 use super::config::MurServerConfig;
 use super::guard::MurGuard;
 use super::interceptor::MurInterceptor;
@@ -15,11 +17,22 @@ use std::collections::HashSet;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
+type ServerGuardsType = Vec<
+	Box<
+		dyn Fn(
+				&MurInjects,
+				&MurServiceContainer,
+			) -> Box<dyn MurGuard + Send + Sync>
+			+ Send
+			+ Sync,
+	>,
+>;
+
 pub struct MurServer {
 	modules: Vec<Box<dyn MurModule + Send + Sync>>,
 	container: MurServiceContainer,
 	injects: MurInjects,
-	guards: Vec<Box<dyn MurGuard + Sync + Send>>,
+	guards: ServerGuardsType,
 	interceptors: Vec<Box<dyn MurInterceptor + Sync + Send>>,
 	middleware: Vec<Box<dyn MurMiddleware + Sync + Send>>,
 	config: MurServerConfig,
@@ -65,7 +78,12 @@ impl MurServer {
 		let mut visited = HashSet::<usize>::new();
 
 		for imported in module.imports() {
-			Self::fill_exports_rec_arc(imported, injects, &mut out, &mut visited);
+			Self::fill_exports_rec_arc(
+				imported,
+				injects,
+				&mut out,
+				&mut visited,
+			);
 		}
 
 		out
@@ -111,17 +129,29 @@ impl MurServer {
 		self
 	}
 
-	pub fn add_global_guard(mut self, guard: impl MurGuard + 'static) -> Self {
-		self.guards.push(Box::new(guard));
+	pub fn guard<T>(mut self) -> Self
+	where
+		T: MurGuardFactory + Send + Sync + 'static,
+	{
+		self.guards.push(Box::new(|injects, container| {
+			Box::new(T::create(injects, container))
+		}));
+
 		self
 	}
 
-	pub fn add_global_interceptor(mut self, interceptor: impl MurInterceptor + 'static) -> Self {
+	pub fn add_global_interceptor(
+		mut self,
+		interceptor: impl MurInterceptor + 'static,
+	) -> Self {
 		self.interceptors.push(Box::new(interceptor));
 		self
 	}
 
-	pub fn add_middleware(mut self, middleware: impl MurMiddleware + 'static) -> Self {
+	pub fn add_middleware(
+		mut self,
+		middleware: impl MurMiddleware + 'static,
+	) -> Self {
 		self.middleware.push(Box::new(middleware));
 		self
 	}
@@ -131,7 +161,10 @@ impl MurServer {
 		self
 	}
 
-	pub fn service_arc<T: MurService + Send + Sync>(mut self, service: Arc<T>) -> Self {
+	pub fn service_arc<T: MurService + Send + Sync>(
+		mut self,
+		service: Arc<T>,
+	) -> Self {
 		self.container.register_arc(service);
 		self
 	}
@@ -161,19 +194,31 @@ impl MurServer {
 		self
 	}
 
-	pub fn on_startup(mut self, hook: impl Fn() + Send + Sync + 'static) -> Self {
+	pub fn on_startup(
+		mut self,
+		hook: impl Fn() + Send + Sync + 'static,
+	) -> Self {
 		self.on_startup.push(Box::new(hook));
 		self
 	}
 
-	pub fn on_shutdown(mut self, hook: impl Fn() + Send + Sync + 'static) -> Self {
+	pub fn on_shutdown(
+		mut self,
+		hook: impl Fn() + Send + Sync + 'static,
+	) -> Self {
 		self.on_shutdown.push(Box::new(hook));
 		self
 	}
 
-	pub fn bind(self, addr: impl ToSocketAddrs) -> Result<MurServerRunner, std::io::Error> {
+	pub fn bind(
+		self,
+		addr: impl ToSocketAddrs,
+	) -> Result<MurServerRunner, std::io::Error> {
 		let addr = addr.to_socket_addrs()?.next().ok_or_else(|| {
-			std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid address")
+			std::io::Error::new(
+				std::io::ErrorKind::InvalidInput,
+				"Invalid address",
+			)
 		})?;
 
 		self.bind_addr(addr)
@@ -185,14 +230,20 @@ impl MurServer {
 		tls_config: MurTlsConfig,
 	) -> Result<MurServerRunner, std::io::Error> {
 		let addr = addr.to_socket_addrs()?.next().ok_or_else(|| {
-			std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid address")
+			std::io::Error::new(
+				std::io::ErrorKind::InvalidInput,
+				"Invalid address",
+			)
 		})?;
 
 		self.config.tls = Some(tls_config);
 		self.bind_addr(addr)
 	}
 
-	pub fn bind_addr(mut self, addr: SocketAddr) -> Result<MurServerRunner, std::io::Error> {
+	pub fn bind_addr(
+		mut self,
+		addr: SocketAddr,
+	) -> Result<MurServerRunner, std::io::Error> {
 		self.config.addr = addr;
 		self.injects.on_init();
 
@@ -205,11 +256,15 @@ impl MurServer {
 		for module in &self.modules {
 			module.on_init();
 
-			let mut visible =
-				Self::build_imports_exports_container(module.as_ref(), &self.injects, &app_global);
+			let mut visible = Self::build_imports_exports_container(
+				module.as_ref(),
+				&self.injects,
+				&app_global,
+			);
 			visible.merge(app_global.clone());
 
-			let local_services = module.services_with_injects(&self.injects, &visible);
+			let local_services =
+				module.services_with_injects(&self.injects, &visible);
 
 			for (tid, svc) in local_services.iter() {
 				visible.register_dyn_with_id(*tid, svc.clone());
@@ -229,8 +284,8 @@ impl MurServer {
 		// 	router.register_controller(c);
 		// }
 
-		for guard in self.guards {
-			// router.add_guard_boxed(guard.create(&self.injects));
+		for guard_factory in self.guards {
+			let guard = guard_factory(&self.injects, &container);
 			router.add_guard_boxed(guard);
 		}
 
@@ -243,7 +298,9 @@ impl MurServer {
 				println!("Loading module: {}", module.name());
 			}
 
-			for controller in module.controllers_with_injects(&self.injects, container.as_ref()) {
+			for controller in module
+				.controllers_with_injects(&self.injects, container.as_ref())
+			{
 				router.register_controller(controller);
 			}
 		}
