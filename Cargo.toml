@@ -1,0 +1,64 @@
+[package]
+name = "murgamu"
+version.workspace = true
+edition = "2024"
+description = "A NestJS-inspired web framework for Rust"
+repository = "https://github.com/etieppo/murgamu"
+license = "LGPL-3.0-or-later"
+keywords = ["framework", "http", "nestjs", "server", "web"]
+categories = ["asynchronous", "web-programming", "web-programming::http-server"]
+publish = true
+
+[workspace]
+members = ["cli", "macros", "sandbox"]
+
+[workspace.package]
+version = "0.8.6"
+
+[lib]
+name = "murgamu"
+path = "src/lib.rs"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+diesel = { version = "2.2", features = [
+  "chrono",
+  "postgres",
+  "r2d2",
+], optional = true }
+http = "1.0"
+http-body-util = "0.1"
+hyper = { version = "1.8", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+indexmap = { version = "2.2", features = ["serde"] }
+jsonwebtoken = { version = "10.3.0", optional = true }
+murgamu-macros = { path = "./macros", version = "0.5.1" }
+regex = "1.10"
+rustls = { version = "0.23" }
+rustls-pemfile = { version = "2.1" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_urlencoded = "0.7"
+tokio = { version = "1", features = ["full"] }
+tokio-rustls = { version = "0.26" }
+urlencoding = "2.1"
+webpki-roots = { version = "1.0.6" }
+
+[dev-dependencies]
+base64 = "0.22"
+rcgen = "0.14.7"
+tokio-test = "0.4"
+uuid = { version = "1.0", features = ["v4"] }
+
+[features]
+default = ["full"]
+diesel = ["dep:diesel"]
+full = ["diesel", "jsonwebtoken", "openapi", "testing", "tls"]
+jsonwebtoken = ["dep:jsonwebtoken"]
+openapi = []
+testing = []
+tls = []
+# Future features
+# validation = []
+# websocket = ["tokio-tungstenite"]
+# tracing = ["tracing", "tracing-subscriber"]
