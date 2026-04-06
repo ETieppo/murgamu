@@ -25,6 +25,22 @@ pub fn analyze_parameter(pat_type: &PatType) -> ParamInfo {
 				is_optional,
 			};
 		}
+		if attr.path().is_ident("body") {
+			return ParamInfo {
+				name,
+				kind: ParamKind::CustomJson(ty_tokens.clone()),
+				ty: ty_tokens,
+				is_optional,
+			};
+		}
+		if attr.path().is_ident("param") {
+			return ParamInfo {
+				name,
+				kind: ParamKind::Param(ty_tokens.clone()),
+				ty: ty_tokens,
+				is_optional,
+			};
+		}
 	}
 
 	let kind = if ty_str.contains("MurRequestContext") || ty_str.contains("MurReq") {

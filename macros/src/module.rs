@@ -2,10 +2,10 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::{
+	Ident, ItemStruct, Token,
 	parse::{Parse, ParseStream},
 	parse_macro_input,
 	punctuated::Punctuated,
-	Ident, ItemStruct, Token,
 };
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ impl Parse for ModuleArgs {
 
 		while !input.is_empty() {
 			let key: Ident = input.parse()?;
-			input.parse::<Token![=]>()?;
+			input.parse::<Token![:]>()?;
 
 			let content;
 			syn::bracketed!(content in input);
@@ -35,13 +35,13 @@ impl Parse for ModuleArgs {
 			match key.to_string().as_str() {
 				"imports" => imports.extend(items),
 				"controllers" => controllers.extend(items),
-				"services" => services.extend(items),
+				"providers" => services.extend(items),
 				"exports" => exports.extend(items),
 				_ => {
 					return Err(syn::Error::new_spanned(
-                        key,
-                        "unknown module attribute key. Allowed keys: imports, controllers, services, exports",
-                    ));
+						key,
+						"unknown module attribute key. Allowed keys: imports, controllers, services, exports",
+					));
 				}
 			}
 

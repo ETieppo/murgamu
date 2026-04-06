@@ -59,14 +59,14 @@ pub fn gen_constructor_with_fallback(
 				continue;
 			};
 
-			if let Pat::Ident(pat_ident) = pat_type.pat.as_ref() {
-				if pat_ident.ident.to_string().starts_with('_') {
-					let var = format_ident!("__mur_ctor_{idx}");
-					let ty = &pat_type.ty;
-					ctor_lets.push(quote! { let #var = <#ty as Default>::default(); });
-					ctor_args.push(quote! { #var });
-					continue;
-				}
+			if let Pat::Ident(pat_ident) = pat_type.pat.as_ref()
+				&& pat_ident.ident.to_string().starts_with('_')
+			{
+				let var = format_ident!("__mur_ctor_{idx}");
+				let ty = &pat_type.ty;
+				ctor_lets.push(quote! { let #var = <#ty as Default>::default(); });
+				ctor_args.push(quote! { #var });
+				continue;
 			}
 
 			let var = format_ident!("__mur_ctor_{idx}");

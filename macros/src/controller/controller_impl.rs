@@ -10,17 +10,16 @@ use quote::quote;
 use syn::fold::{self, Fold};
 use syn::{FnArg, ItemImpl, Meta, MetaList};
 
-/// Strips `#[use_pipe(...)]` attributes from function parameters so the
-/// re-emitted impl block doesn't contain a proc-macro attribute in a position
-/// where the compiler only allows inert (non-macro) attributes.
 struct StripUsePipeAttrs;
 
 impl Fold for StripUsePipeAttrs {
 	fn fold_fn_arg(&mut self, mut arg: FnArg) -> FnArg {
 		if let FnArg::Typed(ref mut pat_type) = arg {
-			pat_type
-				.attrs
-				.retain(|attr| !attr.path().is_ident("use_pipe"));
+			pat_type.attrs.retain(|attr| {
+				!attr.path().is_ident("use_pipe")
+					&& !attr.path().is_ident("body")
+					&& !attr.path().is_ident("param")
+			});
 		}
 		fold::fold_fn_arg(self, arg)
 	}
@@ -37,7 +36,6 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 		let syn::ImplItem::Fn(method) = item else {
 			continue;
 		};
-
 		let method_name = &method.sig.ident;
 		let method_inputs = &method.sig.inputs;
 		let mut is_public = false;
@@ -91,7 +89,6 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 			let tokens_str = tokens.to_string();
 			let route_path = normalize_path(tokens_str.trim_matches('"'));
 			let full_path = merge_paths(&base_path, &route_path);
-
 			let params: Vec<ParamInfo> = method_inputs
 				.iter()
 				.filter_map(|arg| {
@@ -102,7 +99,6 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 					}
 				})
 				.collect();
-
 			let handler_code = generate_handler_code(method_name, &params);
 
 			route_registrations.push(quote! {
@@ -120,10 +116,6 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 	let (ensure_constructor, ctor_lets, ctor_args, required_container_typeids) =
 		gen_constructor(&input);
 
-	// Gera `fn routes(self: Arc<Self>, container: &MurServiceContainer)`.
-	// O `controller` ja e um Arc<Self>, entao pode ser clonado para as closures
-	// sem custo extra. O usuario nunca ve Arc: ele passa T e o router chama
-	// Arc::new(t).routes(container) via IntoController.
 	let controller_trait_impl = quote! {
 		impl #impl_generics murgamu::MurController for #impl_type #where_clause {
 			fn routes(
@@ -177,10 +169,6 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 		where_clause,
 	);
 
-	// Re-emit the impl block with #[use_pipe] stripped from parameters.
-	// The controller macro already read and processed those attributes above;
-	// leaving them in the output would cause a compile error because
-	// proc-macro attributes are not valid in parameter position.
 	let clean_input = StripUsePipeAttrs.fold_item_impl(input);
 
 	quote! {
