@@ -1,0 +1,197 @@
+// Copyright (C) 2026  Emerson Alexandre Tieppo Jr. - Murgamü
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+mod controller;
+mod core;
+mod derive;
+mod guard;
+mod injectable;
+mod interceptor;
+mod main_entry;
+mod module;
+mod pipe;
+mod response;
+mod service;
+mod types;
+mod use_pipe;
+
+use proc_macro::TokenStream;
+use syn::{ItemImpl, parse_macro_input};
+
+#[proc_macro_attribute]
+pub fn controller(args: TokenStream, input: TokenStream) -> TokenStream {
+	let input = parse_macro_input!(input as ItemImpl);
+	controller::controller_impl(args, input).into()
+}
+
+#[proc_macro_attribute]
+pub fn get(args: TokenStream, input: TokenStream) -> TokenStream {
+	controller::get_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn post(args: TokenStream, input: TokenStream) -> TokenStream {
+	controller::post_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn put(args: TokenStream, input: TokenStream) -> TokenStream {
+	controller::put_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn delete(args: TokenStream, input: TokenStream) -> TokenStream {
+	controller::delete_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn patch(args: TokenStream, input: TokenStream) -> TokenStream {
+	controller::patch_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn head(args: TokenStream, input: TokenStream) -> TokenStream {
+	controller::head_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn options(args: TokenStream, input: TokenStream) -> TokenStream {
+	controller::options_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn service(args: TokenStream, input: TokenStream) -> TokenStream {
+	service::service_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn inject(_args: TokenStream, input: TokenStream) -> TokenStream {
+	input
+}
+
+#[proc_macro_attribute]
+pub fn injectable(args: TokenStream, input: TokenStream) -> TokenStream {
+	injectable::injectable_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn module(args: TokenStream, input: TokenStream) -> TokenStream {
+	module::module_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn guard(args: TokenStream, input: TokenStream) -> TokenStream {
+	guard::guard_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn pipe(args: TokenStream, input: TokenStream) -> TokenStream {
+	pipe::pipe_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn interceptor(args: TokenStream, input: TokenStream) -> TokenStream {
+	interceptor::interceptor_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn main(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::main_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn route(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::route_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn param(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::param_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn query(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::query_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn header(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::header_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn body(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::body_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn validate(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::validate_impl(args, input)
+}
+
+#[proc_macro_attribute]
+pub fn api(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::api_impl(args, input)
+}
+
+#[proc_macro]
+pub fn json_response(input: TokenStream) -> TokenStream {
+	response::json_impl(input)
+}
+
+#[proc_macro]
+pub fn text_response(input: TokenStream) -> TokenStream {
+	response::text_impl(input)
+}
+
+#[proc_macro]
+pub fn html_response(input: TokenStream) -> TokenStream {
+	response::html_impl(input)
+}
+
+#[proc_macro]
+pub fn ok_response(input: TokenStream) -> TokenStream {
+	response::ok_impl(input)
+}
+
+#[proc_macro]
+pub fn no_content_response(input: TokenStream) -> TokenStream {
+	response::no_content_impl(input)
+}
+
+#[proc_macro_derive(MurDto)]
+pub fn derive_dto(input: TokenStream) -> TokenStream {
+	derive::derive_dto_impl(input)
+}
+
+#[proc_macro_derive(MurEntity)]
+pub fn derive_entity(input: TokenStream) -> TokenStream {
+	derive::derive_entity_impl(input)
+}
+
+#[proc_macro_attribute]
+pub fn public(_args: TokenStream, input: TokenStream) -> TokenStream {
+	input
+}
+
+#[proc_macro_attribute]
+pub fn role(_args: TokenStream, input: TokenStream) -> TokenStream {
+	input
+}
+
+#[proc_macro_attribute]
+pub fn use_pipe(args: TokenStream, input: TokenStream) -> TokenStream {
+	use_pipe::use_pipe_impl(args, input)
+}
