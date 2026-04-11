@@ -47,7 +47,7 @@ pub fn injectable_impls(input: &ItemStruct) -> TokenStream2 {
 		}
 
 		impl #impl_generics murgamu::MurServiceFactory for #struct_name #ty_generics #where_clause {
-			fn create(
+			fn __create_factory(
 				#injects_param: &murgamu::MurInjects,
 				_container: &murgamu::MurServiceContainer,
 			) -> Self {

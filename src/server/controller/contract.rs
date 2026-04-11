@@ -32,7 +32,7 @@ pub trait MurController: Send + Sync + 'static {
 }
 
 pub trait MurControllerFactory: MurController {
-	fn create(injects: &MurInjects, container: &MurServiceContainer) -> Self
+	fn __create_factory(injects: &MurInjects, container: &MurServiceContainer) -> Self
 	where
 		Self: Sized;
 }

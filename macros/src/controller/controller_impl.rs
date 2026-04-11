@@ -155,7 +155,7 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 
 	let controller_factory_impl = quote! {
 		impl #impl_generics murgamu::MurControllerFactory for #impl_type #where_clause {
-			fn create(injects: &murgamu::MurInjects, _container: &murgamu::MurServiceContainer) -> Self {
+			fn __create_factory(injects: &murgamu::MurInjects, _container: &murgamu::MurServiceContainer) -> Self {
 				#(#ctor_lets)*
 				Self::new(#(#ctor_args),*)
 			}

@@ -103,7 +103,7 @@ fn generate_module_impl(input: &ItemStruct, args: &ModuleArgs) -> TokenStream2 {
 					self.#field_name
 						.get_or_init(|| {
 							std::sync::Arc::new(
-								<#service_type as murgamu::MurServiceFactory>::create(_injects, _container)
+								<#service_type as murgamu::MurServiceFactory>::__create_factory(_injects, _container)
 							)
 						})
 						.clone()
@@ -132,7 +132,7 @@ fn generate_module_impl(input: &ItemStruct, args: &ModuleArgs) -> TokenStream2 {
 		.map(|c| {
 			quote! {
 				std::sync::Arc::new(
-					<#c as murgamu::MurControllerFactory>::create(_injects, _container)
+					<#c as murgamu::MurControllerFactory>::__create_factory(_injects, _container)
 				) as std::sync::Arc<dyn murgamu::MurController>
 			}
 		})

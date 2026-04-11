@@ -27,7 +27,7 @@ pub trait MurGuard: Send + Sync + 'static {
 }
 
 pub trait MurGuardFactory: MurGuard {
-	fn create(injects: &MurInjects, _container: &MurServiceContainer) -> Self;
+	fn __create_factory(injects: &MurInjects, _container: &MurServiceContainer) -> Self;
 }
 
 pub trait MurGuardSync: Send + Sync + 'static {

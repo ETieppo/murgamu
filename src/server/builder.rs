@@ -128,7 +128,7 @@ impl MurServer {
 		T: MurGuardFactory + Send + Sync + 'static,
 	{
 		self.guards.push(Box::new(|injects, container| {
-			Box::new(T::create(injects, container))
+			Box::new(T::__create_factory(injects, container))
 		}));
 		self
 	}
@@ -138,7 +138,7 @@ impl MurServer {
 		T: MurPipeFactory + MurPipeDyn + 'static,
 	{
 		self.pipes.push(Box::new(|injects, container| {
-			Box::new(T::create(injects, container)) as Box<dyn MurPipeDyn>
+			Box::new(T::__create_factory(injects, container)) as Box<dyn MurPipeDyn>
 		}));
 		self
 	}
@@ -150,7 +150,7 @@ impl MurServer {
 		T: MurInterceptorFactory + Send + Sync + 'static,
 	{
 		self.interceptor_factories.push(Box::new(|injects, container| {
-			Box::new(T::create(injects, container)) as Box<dyn MurInterceptor + Send + Sync>
+			Box::new(T::__create_factory(injects, container)) as Box<dyn MurInterceptor + Send + Sync>
 		}));
 		self
 	}

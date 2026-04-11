@@ -42,7 +42,7 @@ fn generate_guard_impl(input: &ItemStruct) -> TokenStream2 {
 		}
 
 		impl #impl_generics murgamu::MurGuardFactory for #struct_name #ty_generics #where_clause {
-			fn create(#injects_param: &murgamu::MurInjects, _container: &murgamu::MurServiceContainer) -> Self {
+			fn __create_factory(#injects_param: &murgamu::MurInjects, _container: &murgamu::MurServiceContainer) -> Self {
 				#(#inject_lets)*
 				#create_expr
 			}

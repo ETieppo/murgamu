@@ -9,7 +9,7 @@ pub trait MurService: Send + Sync + 'static {
 }
 
 pub trait MurServiceFactory: MurService {
-	fn create(injects: &MurInjects, _container: &MurServiceContainer) -> Self;
+	fn __create_factory(injects: &MurInjects, _container: &MurServiceContainer) -> Self;
 }
 
 pub trait MurInjectable: Send + Sync + 'static {

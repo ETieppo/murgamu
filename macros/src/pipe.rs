@@ -127,22 +127,26 @@ pub fn pipe_impl(args: TokenStream, input: TokenStream) -> TokenStream {
 	};
 
 	let (ensure_constructor, ctor_lets, ctor_args, required_container_typeids) =
-		gen_constructor_with_fallback(&input, None);
+		gen_constructor_with_fallback(
+			&input,
+			Some(
+				"Pipe must define `fn new(...) -> Self` in this `#[pipe]` impl block. \
+				For pipes with injected services, move the constructor here. \
+				For zero-dependency pipes, add: `fn new() -> Self { Self {} }`.",
+			),
+		);
 
 	let has_new = input
 		.items
 		.iter()
 		.any(|item| matches!(item, syn::ImplItem::Fn(f) if f.sig.ident == "new"));
 
-	let create_expr = if has_new {
-		quote! { Self::new(#(#ctor_args),*) }
-	} else {
-		quote! { Self::default() }
-	};
+	let create_expr = quote! { Self::new(#(#ctor_args),*) };
+	let _ = has_new;
 
 	let pipe_factory_impl = quote! {
 		impl #impl_generics murgamu::MurPipeFactory for #impl_type #where_clause {
-			fn create(
+			fn __create_factory(
 				_injects: &murgamu::MurInjects,
 				_container: &murgamu::MurServiceContainer,
 			) -> Self {

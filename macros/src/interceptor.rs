@@ -34,7 +34,7 @@ pub fn interceptor_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
 		}
 
 		impl #impl_generics murgamu::MurInterceptorFactory for #struct_name #ty_generics #where_clause {
-			fn create(
+			fn __create_factory(
 				#injects_param: &murgamu::MurInjects,
 				_container: &murgamu::MurServiceContainer,
 			) -> Self {

@@ -136,7 +136,7 @@ pub fn generate_handler_code(method_name: &Ident, params: &[ParamInfo]) -> Token
 						// Build the pipe with DI from the request container.
 						// MurInjects is empty here because parameter-level pipes rely
 						// on container services, not manually-registered injectables.
-						let __pipe = <#pipe_type as murgamu::MurPipeFactory>::create(
+						let __pipe = <#pipe_type as murgamu::MurPipeFactory>::__create_factory(
 							&murgamu::MurInjects::new(),
 							ctx.container.as_ref(),
 						);

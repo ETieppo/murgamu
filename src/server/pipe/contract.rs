@@ -24,7 +24,7 @@ pub trait MurPipe<Input>: Send + Sync + 'static {
 }
 
 pub trait MurPipeFactory: Send + Sync + 'static {
-	fn create(injects: &MurInjects, container: &MurServiceContainer) -> Self
+	fn __create_factory(injects: &MurInjects, container: &MurServiceContainer) -> Self
 	where
 		Self: Sized;
 }

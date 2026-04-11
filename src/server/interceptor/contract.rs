@@ -6,7 +6,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 pub trait MurInterceptorFactory: MurInterceptor {
-	fn create(injects: &MurInjects, container: &MurServiceContainer) -> Self
+	fn __create_factory(injects: &MurInjects, container: &MurServiceContainer) -> Self
 	where
 		Self: Sized;
 }

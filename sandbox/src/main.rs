@@ -26,6 +26,7 @@ impl InjectNameService {
 	fn new() -> Self {
 		Self
 	}
+
 	pub fn get_name(&self) -> Result<String, MurError> {
 		mur_env("CARGO_PKG_NAME")
 	}
