@@ -5,11 +5,11 @@ const AUTH_COOKIE: &str = "authorization";
 
 #[guard]
 pub struct GlobalGuard {
-	token_service: Arc<TokenService>,
+	token_service: TokenService,
 }
 
 impl GlobalGuard {
-	pub fn new(token_service: Arc<TokenService>) -> Self {
+	pub fn new(token_service: TokenService) -> Self {
 		Self { token_service }
 	}
 

@@ -9,7 +9,7 @@ impl TokenService {
 		Self {}
 	}
 
-	// TODO: service stopped to require self param
+	// TODO: service stopped to explicitly require self param
 	pub async fn validate_token(&self, token: &str) -> Result<JwtPayload, MurError> {
 		if self.is_recorded(token).await {
 			return JwtPayload::decode(token);

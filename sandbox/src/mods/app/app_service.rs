@@ -4,17 +4,17 @@ use murgamu::prelude::*;
 
 #[injectable]
 pub struct AppService {
-	injected_name_service: Arc<InjectNameService>,
+	injected_name_service: InjectNameService,
 }
 
 impl AppService {
-	pub fn new(injected_name_service: Arc<InjectNameService>) -> Self {
+	pub fn new(injected_name_service: InjectNameService) -> Self {
 		Self {
 			injected_name_service,
 		}
 	}
 
-	pub fn greet(&self) -> Result<String, MurError> {
+	pub async fn greet(&self) -> Result<String, MurError> {
 		let name = self.injected_name_service.get_name()?;
 		Ok(format!("Hello, {}! Welcome to Murgamü.", name))
 	}

@@ -20,7 +20,7 @@ async fn main() -> MurMainResult {
 		.await
 }
 
-#[service]
+#[injectable]
 pub struct InjectNameService;
 impl InjectNameService {
 	fn new() -> Self {

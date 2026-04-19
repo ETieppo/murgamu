@@ -986,7 +986,7 @@ dependencies = [
 
 [[package]]
 name = "murgamu-macros"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "proc-macro2",
  "quote",

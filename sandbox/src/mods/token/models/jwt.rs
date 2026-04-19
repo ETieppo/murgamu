@@ -1,6 +1,6 @@
 use crate::mods::users::UserRole;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
-use murgamu::{MurError, server::error::builder::MurResult};
+use murgamu::server::error::builder::MurResult;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
