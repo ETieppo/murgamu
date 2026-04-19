@@ -40,7 +40,7 @@ impl Parse for ModuleArgs {
 				_ => {
 					return Err(syn::Error::new_spanned(
 						key,
-						"unknown module attribute key. Allowed keys: imports, controllers, services, exports",
+						"unknown module attribute key. Allowed keys: imports, controllers, providers, exports",
 					));
 				}
 			}
