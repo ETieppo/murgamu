@@ -1,37 +1,37 @@
-pub mod app_controller_template;
-pub mod app_mod_content_template;
-pub mod app_service_template;
-pub mod auth_guard_template;
-pub mod auth_mod_template;
-pub mod auth_pipe_template;
-pub mod cargo_template;
-pub mod formatter_template;
-pub mod main_template;
-pub mod models_mod_template;
-pub mod mods_mod_template;
-pub mod token_jwt_template;
-pub mod token_mod_template;
-pub mod token_models_mod_template;
-pub mod token_service_template;
-pub mod user_props_template;
-pub mod users_mod_template;
-pub mod users_role_template;
+pub const CARGO_TEMPLATE: &str = r#"[package]
+name = "{{project_name}}"
+version = "0.1.0"
+edition = "2024"
 
-pub use app_controller_template::CONTROLLER_TEMPLATE;
-pub use app_mod_content_template::APP_MOD_CONTENT_TEMPLATE;
-pub use app_service_template::SERVICE_TEMPLATE;
-pub use auth_guard_template::AUTH_GUARD_TEMPLATE;
-pub use auth_mod_template::AUTH_MOD_TEMPLATE;
-pub use auth_pipe_template::AUTH_PIPE_TEMPLATE;
-pub use cargo_template::CARGO_TEMPLATE;
-pub use formatter_template::FORMATTER_TEMPLATE;
-pub use main_template::MAIN_TEMPLATE;
-pub use models_mod_template::MODELS_MOD_TEMPLATE;
-pub use mods_mod_template::MODULES_MOD_TEMPLATE;
-pub use token_jwt_template::TOKEN_JWT_TEMPLATE;
-pub use token_mod_template::TOKEN_MOD_TEMPLATE;
-pub use token_models_mod_template::TOKEN_MODELS_MOD_TEMPLATE;
-pub use token_service_template::TOKEN_SERVICE_TEMPLATE;
-pub use user_props_template::USER_PROPS_TEMPLATE;
-pub use users_mod_template::USERS_MOD_TEMPLATE;
-pub use users_role_template::USERS_ROLE_TEMPLATE;
+[dependencies]
+chrono = "0.4"
+jsonwebtoken = "10"
+murgamu = "{{murgamu_version}}"
+serde = { version = "1", features = ["derive"] }
+strum_macros = "0.28"
+"#;
+
+pub const FORMATTER_TEMPLATE: &str = include_str!("../../../sandbox/.rustfmt.toml");
+pub const MAIN_TEMPLATE: &str = include_str!("../../../sandbox/src/main.rs");
+pub const MODULES_MOD_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/mod.rs");
+pub const APP_MOD_CONTENT_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/app/mod.rs");
+pub const CONTROLLER_TEMPLATE: &str =
+    include_str!("../../../sandbox/src/mods/app/app_controller.rs");
+pub const SERVICE_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/app/app_service.rs");
+pub const MODELS_MOD_TEMPLATE: &str =
+    include_str!("../../../sandbox/src/mods/app/models/mod.rs");
+pub const USER_PROPS_TEMPLATE: &str =
+    include_str!("../../../sandbox/src/mods/app/models/user_props.rs");
+pub const AUTH_MOD_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/auth/mod.rs");
+pub const AUTH_GUARD_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/auth/guard.rs");
+pub const AUTH_PIPE_TEMPLATE: &str =
+    include_str!("../../../sandbox/src/mods/auth/jwt_extraction_pipe.rs");
+pub const TOKEN_MOD_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/token/mod.rs");
+pub const TOKEN_SERVICE_TEMPLATE: &str =
+    include_str!("../../../sandbox/src/mods/token/service.rs");
+pub const TOKEN_MODELS_MOD_TEMPLATE: &str =
+    include_str!("../../../sandbox/src/mods/token/models/mod.rs");
+pub const TOKEN_JWT_TEMPLATE: &str =
+    include_str!("../../../sandbox/src/mods/token/models/jwt.rs");
+pub const USERS_MOD_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/users/mod.rs");
+pub const USERS_ROLE_TEMPLATE: &str = include_str!("../../../sandbox/src/mods/users/role.rs");
