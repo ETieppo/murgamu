@@ -4,12 +4,12 @@ use murgamu::prelude::*;
 
 #[derive(Clone)]
 pub struct AppController {
-	service: Arc<AppService>,
+	service: AppService,
 }
 
 #[controller("/")]
 impl AppController {
-	pub fn new(service: Arc<AppService>) -> Self {
+	pub fn new(service: AppService) -> Self {
 		Self { service }
 	}
 
@@ -31,10 +31,23 @@ impl AppController {
 		let greeting = self.service.greet()?;
 		mur_json!({"greeting": greeting,  "name": name })
 	}
+
+	#[public]
+	#[post("/create")]
+	async fn receive_body(&self, b: Teste) -> MurRes {
+		mur_json!("body received")
+	}
 }
 
 #[derive(Debug, Deserialize, Default)]
 pub struct GreetQuery {
 	pub name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Teste {
+	username: String,
+	password: String,
+	email: String,
 }
 "#;

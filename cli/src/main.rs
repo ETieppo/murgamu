@@ -3,7 +3,6 @@ mod generators;
 mod templates;
 
 use crate::commands::dev_command;
-use crate::commands::ensure_cargo_watch;
 use crate::commands::execute;
 use clap::ArgAction;
 use clap::Parser;
@@ -39,7 +38,7 @@ enum Commands {
 	},
 	#[command(
 		about = "Run project with hot reload",
-		long_about = "Starts development mode using cargo-watch for automatic rebuild and restart"
+		long_about = "Starts development mode with automatic rebuild and restart on file changes"
 	)]
 	Dev {
 		#[arg(value_name = "DIR")]
@@ -62,10 +61,7 @@ fn main() {
 
 	let result = match command {
 		Commands::New { name } => execute(name),
-		Commands::Dev { dir } => {
-			ensure_cargo_watch().expect("[ERROR]: to ensure cargo watch");
-			dev_command(dir)
-		}
+		Commands::Dev { dir } => dev_command(dir),
 	};
 
 	if let Err(e) = result {

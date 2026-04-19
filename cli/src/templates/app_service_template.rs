@@ -2,7 +2,7 @@ pub const SERVICE_TEMPLATE: &str = r#"use super::models::user_props::UserProps;
 use crate::InjectNameService;
 use murgamu::prelude::*;
 
-#[service]
+#[injectable]
 pub struct AppService {
 	injected_name_service: Arc<InjectNameService>,
 }
