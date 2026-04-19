@@ -48,6 +48,7 @@ pub use murgamu_macros::post;
 pub use murgamu_macros::public;
 pub use murgamu_macros::put;
 pub use murgamu_macros::query;
+pub use murgamu_macros::queryparam;
 pub use murgamu_macros::role;
 pub use murgamu_macros::route;
 pub use murgamu_macros::service;
@@ -272,6 +273,7 @@ pub mod prelude {
 	pub use crate::public;
 	pub use crate::put;
 	pub use crate::query;
+	pub use crate::queryparam;
 	pub use crate::role;
 	pub use crate::route;
 	pub use crate::server::http::sse::MurSse;
