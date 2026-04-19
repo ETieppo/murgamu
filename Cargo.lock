@@ -844,14 +844,14 @@ dependencies = [
 
 [[package]]
 name = "mur"
-version = "0.8.6"
+version = "0.8.7"
 dependencies = [
  "clap",
 ]
 
 [[package]]
 name = "murgamu"
-version = "0.8.6"
+version = "0.8.7"
 dependencies = [
  "base64",
  "chrono",
@@ -1214,7 +1214,7 @@ checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
 name = "sandbox"
-version = "0.8.6"
+version = "0.8.7"
 dependencies = [
  "chrono",
  "jsonwebtoken",
