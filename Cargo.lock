@@ -949,7 +949,7 @@ dependencies = [
 
 [[package]]
 name = "mur"
-version = "0.8.7"
+version = "0.8.8"
 dependencies = [
  "clap",
  "notify",
@@ -957,7 +957,7 @@ dependencies = [
 
 [[package]]
 name = "murgamu"
-version = "0.8.7"
+version = "0.8.8"
 dependencies = [
  "base64",
  "chrono",
@@ -986,7 +986,7 @@ dependencies = [
 
 [[package]]
 name = "murgamu-macros"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1363,7 +1363,7 @@ dependencies = [
 
 [[package]]
 name = "sandbox"
-version = "0.8.7"
+version = "0.8.8"
 dependencies = [
  "chrono",
  "jsonwebtoken",
