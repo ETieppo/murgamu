@@ -15,8 +15,9 @@ pub enum ParamKind {
 	RawBody,
 	Container,
 	Pipe(syn::Path, syn::Type),
-	// Inject(TokenStream),
 	CustomJson(TokenStream),
+	RawParam(TokenStream, Option<TokenStream>),
+	RawQueryParam(TokenStream, Option<TokenStream>),
 	Unknown,
 }
 

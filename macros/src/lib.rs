@@ -127,6 +127,11 @@ pub fn query(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
+pub fn queryparam(args: TokenStream, input: TokenStream) -> TokenStream {
+	main_entry::query_impl(args, input)
+}
+
+#[proc_macro_attribute]
 pub fn header(args: TokenStream, input: TokenStream) -> TokenStream {
 	main_entry::header_impl(args, input)
 }

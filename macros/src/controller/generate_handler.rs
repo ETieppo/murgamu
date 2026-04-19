@@ -129,6 +129,51 @@ pub fn generate_handler_code(method_name: &Ident, params: &[ParamInfo]) -> Token
 				}
 			}
 
+			ParamKind::RawParam(ty, inner_ty) => {
+				call_args.push(quote!(#name));
+				let param_name_str = name.to_string();
+				if let Some(inner) = inner_ty {
+					quote! {
+						let #name: Option<#inner> = ctx.path_params
+							.get(#param_name_str)
+							.and_then(|val| val.parse().ok());
+					}
+				} else {
+					quote! {
+						let #name: #ty = match ctx.path_params.get(#param_name_str) {
+							Some(val) => match val.parse() {
+								Ok(parsed) => parsed,
+								Err(_) => return MurResponder::error(&format!(
+									"Invalid value for path parameter '{}'", #param_name_str
+								)),
+							},
+							None => return MurResponder::error(&format!(
+								"Missing path parameter: {}", #param_name_str
+							)),
+						};
+					}
+				}
+			}
+
+			ParamKind::RawQueryParam(ty, inner_ty) => {
+				call_args.push(quote!(#name));
+				let param_name_str = name.to_string();
+				if let Some(inner) = inner_ty {
+					quote! {
+						let #name: Option<#inner> = ctx.query_param_as::<#inner>(#param_name_str);
+					}
+				} else {
+					quote! {
+						let #name: #ty = match ctx.query_param_as::<#ty>(#param_name_str) {
+							Some(val) => val,
+							None => return MurResponder::error(&format!(
+								"Missing query parameter: {}", #param_name_str
+							)),
+						};
+					}
+				}
+			}
+
 			ParamKind::Pipe(pipe_type, declared_ty) => {
 				call_args.push(quote!(#name));
 				quote! {

@@ -1,4 +1,5 @@
 use super::extract_generic_type;
+use super::extract_option_inner;
 use crate::types::{ParamInfo, ParamKind};
 use quote::quote;
 use syn::{Ident, Pat, PatType};
@@ -34,9 +35,27 @@ pub fn analyze_parameter(pat_type: &PatType) -> ParamInfo {
 			};
 		}
 		if attr.path().is_ident("param") {
+			let inner_ty = if is_optional {
+				extract_option_inner(ty).map(|t| quote!(#t))
+			} else {
+				None
+			};
 			return ParamInfo {
 				name,
-				kind: ParamKind::Param(ty_tokens.clone()),
+				kind: ParamKind::RawParam(ty_tokens.clone(), inner_ty),
+				ty: ty_tokens,
+				is_optional,
+			};
+		}
+		if attr.path().is_ident("queryparam") {
+			let inner_ty = if is_optional {
+				extract_option_inner(ty).map(|t| quote!(#t))
+			} else {
+				None
+			};
+			return ParamInfo {
+				name,
+				kind: ParamKind::RawQueryParam(ty_tokens.clone(), inner_ty),
 				ty: ty_tokens,
 				is_optional,
 			};
@@ -62,12 +81,6 @@ pub fn analyze_parameter(pat_type: &PatType) -> ParamInfo {
 		let inner = extract_generic_type(&ty_str, "Param");
 		ParamKind::Param(inner.parse().unwrap_or(quote!(String)))
 	}
-	// else if ty_str.starts_with("Inject<")
-	//   || ty_str.starts_with("murgamu::Inject<")
-	// {
-	//   let inner = extract_generic_type(&ty_str, "Inject");
-	//   ParamKind::Inject(inner.parse().unwrap_or(quote!(())))
-	// }
 	else if ty_str.contains("MurHeader") {
 		ParamKind::Header
 	} else if ty_str.contains("MurBody") {
