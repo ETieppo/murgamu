@@ -949,7 +949,7 @@ dependencies = [
 
 [[package]]
 name = "mur"
-version = "0.8.9"
+version = "0.8.10"
 dependencies = [
  "clap",
  "notify",
@@ -957,7 +957,7 @@ dependencies = [
 
 [[package]]
 name = "murgamu"
-version = "0.8.9"
+version = "0.8.10"
 dependencies = [
  "base64",
  "chrono",
@@ -986,7 +986,7 @@ dependencies = [
 
 [[package]]
 name = "murgamu-macros"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "proc-macro2",
  "quote",
