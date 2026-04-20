@@ -35,8 +35,6 @@ pub fn execute(
 		);
 	}
 
-	log::info("Scaffolding project structure...")?;
-
 	let generator = ProjectGenerator::new(project_name, template_type.unwrap());
 	generator.generate()?;
 	Ok(())
