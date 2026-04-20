@@ -5,19 +5,60 @@ use http_body_util::Full;
 use hyper::Response;
 use hyper::body::Bytes;
 
+/// Alias for a fallible handler result carrying a [`MurError`].
 pub type MurResult<T> = Result<T, MurError>;
 
+/// The unified error type for the Murgamu framework.
+///
+/// Every route handler returns `Result<Response, MurError>` (aliased as [`MurRes`]).
+/// `MurError` carries an HTTP semantic (status code + message) so the router can
+/// convert it directly into an appropriate JSON error response without extra
+/// boilerplate in handler code.
+///
+/// # Constructors
+///
+/// Convenience constructors exist for the most common HTTP error categories:
+///
+/// ```rust,ignore
+/// return Err(MurError::not_found("User not found"));
+/// return Err(MurError::unauthorized("Token expired"));
+/// return Err(MurError::bad_request("Invalid input"));
+/// return Err(MurError::internal("Database unreachable"));
+/// return Err(MurError::custom(StatusCode::TEAPOT, "I'm a teapot"));
+/// ```
+///
+/// # Automatic Conversions
+///
+/// `MurError` implements `From` for common error types so the `?` operator works
+/// naturally in handler bodies:
+///
+/// - `hyper::Error`
+/// - `serde_json::Error`
+/// - `std::io::Error`
+/// - `std::string::FromUtf8Error`
+/// - `diesel::result::Error` *(feature `diesel`)*
+/// - `jsonwebtoken::errors::Error` *(feature `jsonwebtoken`)*
 #[derive(Debug)]
 pub enum MurError {
+	/// A low-level HTTP transport error from the Hyper runtime.
 	Hyper(hyper::Error),
+	/// A JSON serialization or deserialization error.
 	Serde(String),
+	/// The requested resource was not found (`404 Not Found`).
 	NotFound(String),
+	/// The request requires authentication (`401 Unauthorized`).
 	Unauthorized(String),
+	/// The caller is authenticated but lacks permission (`403 Forbidden`).
 	Forbidden(String),
+	/// The request payload or parameters are invalid (`400 Bad Request`).
 	BadRequest(String),
+	/// An unexpected server-side error (`500 Internal Server Error`).
 	Internal(String),
+	/// A required environment variable was missing at startup.
 	NoEnv(&'static str),
+	/// The request body exceeded the configured size limit (`413 Payload Too Large`).
 	PayloadTooLarge(String),
+	/// An error with an arbitrary HTTP status code and message.
 	Custom(StatusCode, String),
 }
 
@@ -146,6 +187,7 @@ impl From<diesel::result::Error> for MurError {
 }
 
 impl MurError {
+	/// Returns the HTTP status code that best represents this error variant.
 	pub fn status_code(&self) -> StatusCode {
 		match self {
 			MurError::Hyper(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -161,6 +203,7 @@ impl MurError {
 		}
 	}
 
+	/// Returns the human-readable error message without the variant prefix.
 	pub fn message(&self) -> &str {
 		match self {
 			MurError::Hyper(_) => "HTTP transport error",
@@ -176,6 +219,7 @@ impl MurError {
 		}
 	}
 
+	/// Returns a short machine-readable identifier for the error category.
 	pub fn kind(&self) -> &'static str {
 		match self {
 			MurError::Hyper(_) => "hyper",
@@ -191,58 +235,74 @@ impl MurError {
 		}
 	}
 
+	/// Creates a `404 Not Found` error.
 	pub fn not_found(msg: impl Into<String>) -> Self {
 		MurError::NotFound(msg.into())
 	}
 
+	/// Creates a `400 Bad Request` error.
 	pub fn bad_request(msg: impl Into<String>) -> Self {
 		MurError::BadRequest(msg.into())
 	}
 
+	/// Creates a `401 Unauthorized` error.
 	pub fn unauthorized(msg: impl Into<String>) -> Self {
 		MurError::Unauthorized(msg.into())
 	}
 
+	/// Creates a `403 Forbidden` error.
 	pub fn forbidden(msg: impl Into<String>) -> Self {
 		MurError::Forbidden(msg.into())
 	}
 
+	/// Creates a `500 Internal Server Error`.
 	pub fn internal(msg: impl Into<String>) -> Self {
 		MurError::Internal(msg.into())
 	}
 
+	/// Creates a `400 Bad Request` error — semantic alias for validation failures.
 	pub fn validation(msg: impl Into<String>) -> Self {
 		MurError::BadRequest(msg.into())
 	}
 
+	/// Creates an error with an arbitrary HTTP status code.
 	pub fn custom(status: StatusCode, msg: impl Into<String>) -> Self {
 		MurError::Custom(status, msg.into())
 	}
 
+	/// Creates a `409 Conflict` error.
 	pub fn conflict(msg: impl Into<String>) -> Self {
 		MurError::Custom(StatusCode::CONFLICT, msg.into())
 	}
 
+	/// Creates a `413 Payload Too Large` error.
 	pub fn payload_too_large(msg: impl Into<String>) -> Self {
 		MurError::PayloadTooLarge(msg.into())
 	}
 
+	/// Creates a `410 Gone` error.
 	pub fn gone(msg: impl Into<String>) -> Self {
 		MurError::Custom(StatusCode::GONE, msg.into())
 	}
 
+	/// Creates a `422 Unprocessable Entity` error.
 	pub fn unprocessable(msg: impl Into<String>) -> Self {
 		MurError::Custom(StatusCode::UNPROCESSABLE_ENTITY, msg.into())
 	}
 
+	/// Creates a `429 Too Many Requests` error.
 	pub fn too_many_requests(msg: impl Into<String>) -> Self {
 		MurError::Custom(StatusCode::TOO_MANY_REQUESTS, msg.into())
 	}
 
+	/// Creates a `503 Service Unavailable` error.
 	pub fn service_unavailable(msg: impl Into<String>) -> Self {
 		MurError::Custom(StatusCode::SERVICE_UNAVAILABLE, msg.into())
 	}
 
+	/// Converts this error into an HTTP response with a JSON body.
+	///
+	/// The response body has the shape `{ "error": "...", "status": 404, "kind": "not_found" }`.
 	pub fn into_response(self) -> MurResponse {
 		let status = self.status_code();
 		let kind = self.kind();
@@ -264,6 +324,7 @@ impl MurError {
 			.unwrap()
 	}
 
+	/// Converts this error into an HTTP response, merging an extra `context` field into the body.
 	pub fn into_response_with_context(self, context: serde_json::Value) -> MurRes {
 		let status = self.status_code();
 		let kind = self.kind();
