@@ -14,8 +14,10 @@ impl AppController {
     } 
   }
 
+  #[public]
   #[get]
   async fn check_alive(&self) -> MurRes {
-    self.service.is_alive()
+    mur_json!(self.service.is_alive())
   }
 }
+

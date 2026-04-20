@@ -6,7 +6,7 @@ pub use service::AppService;
 use murgamu::prelude::*;
 
 #[module(
-  controllers: [AppController],
+  controllers: [AppController]
   providers: [AppService]
 )]
 pub struct AppModule;
