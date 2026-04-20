@@ -81,6 +81,19 @@ pub fn generate_handler_code(method_name: &Ident, params: &[ParamInfo]) -> Token
 				}
 			}
 
+			ParamKind::CustomQuery(ty) => {
+				call_args.push(quote!(#name));
+				quote! {
+					let #name: #ty = {
+						let qs = ctx.parts.uri.query().unwrap_or("");
+						match serde_urlencoded::from_str(qs) {
+							Ok(data) => data,
+							Err(e) => return MurResponder::error(&format!("Failed to parse query: {}", e)),
+						}
+					};
+				}
+			}
+
 			ParamKind::Query(inner_ty) => {
 				call_args.push(quote!(#name));
 				quote! {

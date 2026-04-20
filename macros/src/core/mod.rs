@@ -10,8 +10,6 @@ mod infer_inject_from_field;
 mod is_constructor;
 mod normalize_manual_inject;
 mod normalize_path;
-mod require_self_params;
-mod to_snake_case;
 
 pub use analyze_parameter::analyze_parameter;
 pub use extract_arc_inner::extract_arc_inner;
@@ -25,8 +23,4 @@ pub use implments_struct_mur_dependencies::implments_struct_mur_dependencies;
 pub use infer_inject_from_field::infer_injects_from_fields;
 pub use is_constructor::is_constructor;
 pub use normalize_manual_inject::InjectSpec;
-pub use normalize_manual_inject::normalize_manual_inject;
 pub use normalize_path::normalize_path;
-pub use require_self_params::require_self_params;
-pub use to_snake_case::to_snake_case;
-pub use to_snake_case::to_snake_case_ident;

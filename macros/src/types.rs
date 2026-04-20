@@ -16,6 +16,7 @@ pub enum ParamKind {
 	Container,
 	Pipe(syn::Path, syn::Type),
 	CustomJson(TokenStream),
+	CustomQuery(TokenStream),
 	RawParam(TokenStream, Option<TokenStream>),
 	RawQueryParam(TokenStream, Option<TokenStream>),
 	Unknown,

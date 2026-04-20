@@ -34,6 +34,14 @@ pub fn analyze_parameter(pat_type: &PatType) -> ParamInfo {
 				is_optional,
 			};
 		}
+		if attr.path().is_ident("query") {
+			return ParamInfo {
+				name,
+				kind: ParamKind::CustomQuery(ty_tokens.clone()),
+				ty: ty_tokens,
+				is_optional,
+			};
+		}
 		if attr.path().is_ident("param") {
 			let inner_ty = if is_optional {
 				extract_option_inner(ty).map(|t| quote!(#t))

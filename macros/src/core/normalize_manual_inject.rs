@@ -11,6 +11,7 @@ pub struct InjectSpec {
 	pub(crate) via_container: bool,
 }
 
+#[allow(dead_code)]
 pub fn normalize_manual_inject(ty: &Type, field_name: Ident) -> InjectSpec {
 	if let Some(opt_inner) = extract_option_inner(ty)
 		&& let Some(arc_inner) = extract_arc_inner(opt_inner)

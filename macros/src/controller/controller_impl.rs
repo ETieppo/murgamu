@@ -19,6 +19,8 @@ impl Fold for StripUsePipeAttrs {
 				!attr.path().is_ident("use_pipe")
 					&& !attr.path().is_ident("body")
 					&& !attr.path().is_ident("param")
+					&& !attr.path().is_ident("query")
+					&& !attr.path().is_ident("queryparam")
 			});
 		}
 		fold::fold_fn_arg(self, arg)
@@ -69,15 +71,18 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 				}
 			}
 
-			let Meta::List(MetaList { path, tokens, .. }) = &attr.meta else {
-				continue;
+			let (http_method, tokens_str) = match &attr.meta {
+				Meta::Path(p) => {
+					let Some(ident) = p.get_ident() else { continue; };
+					(ident.to_string(), String::new())
+				}
+				Meta::List(MetaList { path, tokens, .. }) => {
+					let Some(ident) = path.get_ident() else { continue; };
+					(ident.to_string(), tokens.to_string())
+				}
+				_ => continue,
 			};
 
-			let Some(ident) = path.get_ident() else {
-				continue;
-			};
-
-			let http_method = ident.to_string();
 			if !matches!(
 				http_method.as_str(),
 				"get" | "post" | "put" | "delete" | "patch" | "head" | "options"
@@ -86,7 +91,6 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 			}
 
 			let http_method_upper = http_method.to_uppercase();
-			let tokens_str = tokens.to_string();
 			let route_path = normalize_path(tokens_str.trim_matches('"'));
 			let full_path = merge_paths(&base_path, &route_path);
 			let params: Vec<ParamInfo> = method_inputs
