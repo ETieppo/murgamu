@@ -16,4 +16,4 @@ path = "src/main.rs"
 [dependencies]
 clap = { version = "4.5.56", features = ["derive"] }
 cliclack = "0.5.4"
-notify = "6"
+notify = "8.2.0"
