@@ -32,6 +32,7 @@ pub struct MurRouter {
 	pub(crate) not_found_handler: Option<MurRouteHandler>,
 	pub(crate) error_handler: Option<Arc<dyn Fn(MurError) -> MurRes + Send + Sync>>,
 	pub(crate) registered_methods: Vec<String>,
+	pub(crate) default_public: bool,
 }
 
 impl MurRouter {
@@ -53,6 +54,7 @@ impl MurRouter {
 			not_found_handler: None,
 			error_handler: None,
 			registered_methods: Vec::new(),
+			default_public: false,
 		}
 	}
 
@@ -68,7 +70,7 @@ impl MurRouter {
 			let mut entry = MurRouteEntry::new(pattern, route_def.handler);
 
 			entry.access_control = MurRouteAccessControl {
-				is_public: route_def.is_public,
+				is_public: route_def.is_public || self.default_public,
 				allowed_roles: route_def.allowed_roles.into_iter().collect(),
 			};
 
@@ -358,6 +360,14 @@ impl MurRouter {
 
 	async fn execute_handler(&self, route: &MurRouteEntry, ctx: MurRequestContext) -> MurRes {
 		let ctx = ctx.with_access_control(route.access_control.clone());
+
+		if !ctx.access_control.is_public && self.global_guards.is_empty() {
+			return MurHttpResponse::unauthorized().json(serde_json::json!({
+				"error": "Unauthorized",
+				"message": "Authentication required",
+				"status": 401
+			}));
+		}
 
 		for guard in &self.global_guards {
 			if !guard.check_can_activate(&ctx).await {

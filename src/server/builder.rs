@@ -43,6 +43,7 @@ pub struct MurServer {
 	config: MurServerConfig,
 	on_startup: Vec<Box<dyn Fn() + Send + Sync>>,
 	on_shutdown: Vec<Box<dyn Fn() + Send + Sync>>,
+	default_public: bool,
 }
 
 impl Default for MurServer {
@@ -53,6 +54,10 @@ impl Default for MurServer {
 
 impl MurServer {
 	pub fn new() -> Self {
+		// Load .env files into the process environment at the earliest possible point.
+		// OS env-vars are never overwritten, so they always take priority.
+		unsafe { crate::server::config::MurEnv::load() };
+
 		Self {
 			modules: Vec::new(),
 			container: MurServiceContainer::new(),
@@ -65,7 +70,13 @@ impl MurServer {
 			config: MurServerConfig::default(),
 			on_startup: Vec::new(),
 			on_shutdown: Vec::new(),
+			default_public: false,
 		}
+	}
+
+	pub fn default_public_routes(mut self) -> Self {
+		self.default_public = true;
+		self
 	}
 
 	pub fn configure(mut self, config: MurServerConfig) -> Self {
@@ -189,6 +200,8 @@ impl MurServer {
 		global.merge(self.container);
 
 		let mut runtime = global.clone();
+		let mut module_containers: Vec<MurServiceContainer> = Vec::with_capacity(self.modules.len());
+
 		for module in &self.modules {
 			module.on_init();
 
@@ -201,11 +214,19 @@ impl MurServer {
 				visible.register_dyn_with_id(*tid, svc.clone());
 			}
 
-			runtime.merge(visible);
+			module_containers.push(visible);
+
+			let export_ids = module.exports();
+			for (tid, svc) in local_services {
+				if export_ids.contains(&tid) {
+					runtime.register_dyn_with_id(tid, svc);
+				}
+			}
 		}
 
 		let container = Arc::new(runtime);
 		let mut router = MurRouter::new(Arc::clone(&container));
+		router.default_public = self.default_public;
 
 		for factory in self.guards {
 			router.add_guard_boxed(factory(&self.injects, &container));
@@ -220,11 +241,11 @@ impl MurServer {
 			router.add_interceptor_boxed(instance);
 		}
 
-		for module in &self.modules {
+		for (module, module_container) in self.modules.iter().zip(module_containers.iter()) {
 			if self.config.enable_logging {
 				println!("Loading module: {}", module.name());
 			}
-			for controller in module.controllers_with_injects(&self.injects, container.as_ref()) {
+			for controller in module.controllers_with_injects(&self.injects, module_container) {
 				router.register_controller(controller);
 			}
 		}
