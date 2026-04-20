@@ -1,4 +1,4 @@
-use crate::mods::app::AppService;
+use super::AppService;
 use murgamu::prelude::*;
 
 #[derive(Clone)]

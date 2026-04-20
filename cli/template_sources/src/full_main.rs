@@ -1,8 +1,8 @@
 mod mods;
 
-use crate::mods::auth::GlobalGuard;
-use crate::mods::token::TokenModule;
-use mods::app::AppModule;
+use mods::GlobalGuard;
+use mods::TokenModule;
+use mods::AppModule;
 use murgamu::MurMainResult;
 use murgamu::MurServer;
 use murgamu::mur_env;

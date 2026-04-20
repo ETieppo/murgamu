@@ -1,9 +1,9 @@
-mod app_controller;
-mod app_service;
+mod controller;
+mod service;
 mod models;
 
-pub use app_controller::AppController;
-pub use app_service::AppService;
+pub use controller::AppController;
+pub use service::AppService;
 use murgamu::prelude::*;
 
 #[module(

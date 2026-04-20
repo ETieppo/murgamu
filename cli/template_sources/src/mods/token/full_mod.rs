@@ -5,6 +5,8 @@ use murgamu::prelude::*;
 pub use service::TokenService;
 
 #[module(
-	providers: [TokenService]
+	providers: [TokenService] 
+	exports: [TokenService]
 )]
 pub struct TokenModule;
+

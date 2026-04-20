@@ -11,35 +11,31 @@ serde = { version = "1", features = ["derive"] }
 strum_macros = "0.28"
 "#;
 
-pub const FORMATTER_TEMPLATE: &str = include_str!("../../template_sources/.rustfmt.toml");
-pub const MAIN_TEMPLATE: &str = include_str!("../../template_sources/src/main.rs");
-pub const MODULES_MOD_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/mod.rs");
-pub const APP_MOD_CONTENT_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/app/mod.rs");
-pub const CONTROLLER_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/app/app_controller.rs");
-pub const SERVICE_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/app/app_service.rs");
-pub const MODELS_MOD_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/app/models/mod.rs");
-pub const USER_PROPS_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/app/models/user_props.rs");
-pub const AUTH_MOD_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/auth/mod.rs");
-pub const AUTH_GUARD_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/auth/guard.rs");
-pub const AUTH_PIPE_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/auth/jwt_extraction_pipe.rs");
-pub const TOKEN_MOD_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/token/mod.rs");
-pub const TOKEN_SERVICE_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/token/service.rs");
-pub const TOKEN_MODELS_MOD_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/token/models/mod.rs");
-pub const TOKEN_JWT_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/token/models/jwt.rs");
-pub const USERS_MOD_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/users/mod.rs");
-pub const USERS_ROLE_TEMPLATE: &str =
-    include_str!("../../template_sources/src/mods/users/role.rs");
+pub const FORMATTER_TEMPLATE: &str = include_str!("../../.rustfmt.toml");
+pub const ENV_TEMPLATE: &str = include_str!("../../.env");
+
+pub const FULL_MAIN_TEMPLATE: &str = include_str!("../../template_sources/src/full_main.rs");
+pub const FULL_MODULES_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/full_mod.rs");
+pub const FULL_APP_MOD_CONTENT_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/full_mod.rs");
+pub const FULL_CONTROLLER_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/full_controller.rs");
+pub const FULL_SERVICE_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/full_service.rs");
+pub const FULL_MODELS_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/models/full_mod.rs");
+pub const FULL_USER_PROPS_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/models/full_user_props.rs");
+pub const FULL_AUTH_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/auth/full_mod.rs");
+pub const FULL_AUTH_GUARD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/auth/full_guard.rs");
+pub const FULL_AUTH_PIPE_TEMPLATE: &str = include_str!("../../template_sources/src/mods/auth/full_jwt_extraction_pipe.rs");
+pub const FULL_TOKEN_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/token/full_mod.rs");
+pub const FULL_TOKEN_SERVICE_TEMPLATE: &str = include_str!("../../template_sources/src/mods/token/full_service.rs");
+pub const FULL_TOKEN_MODELS_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/token/models/full_mod.rs");
+pub const FULL_TOKEN_JWT_TEMPLATE: &str = include_str!("../../template_sources/src/mods/token/models/full_jwt.rs");
+pub const FULL_USERS_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/users/full_mod.rs");
+pub const FULL_USERS_ROLE_TEMPLATE: &str = include_str!("../../template_sources/src/mods/users/full_role.rs");
+
+pub const STARTER_MAIN_TEMPLATE: &str = include_str!("../../template_sources/src/starter_main.rs");
+pub const STARTER_MODULES_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/starter_mod.rs");
+pub const STARTER_APP_MOD_CONTENT_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/starter_mod.rs");
+pub const STARTER_CONTROLLER_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/starter_controller.rs");
+pub const STARTER_SERVICE_TEMPLATE: &str = include_str!("../../template_sources/src/mods/app/starter_service.rs");
+
+pub const BASIC_MAIN_TEMPLATE: &str = include_str!("../../template_sources/src/basic_main.rs");
+pub const BASIC_MODULES_MOD_TEMPLATE: &str = include_str!("../../template_sources/src/mods/basic_mod.rs");

@@ -4,6 +4,7 @@ mod templates;
 
 use crate::commands::dev_command;
 use crate::commands::execute;
+use crate::generators::TemplateTypeEnum;
 use clap::ArgAction;
 use clap::Parser;
 use clap::Subcommand;
@@ -15,7 +16,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 	name = "mur",
 	author = "E.Tieppo",
 	version = VERSION,
-	about = "🚀 Murgamü CLI",
+	about = "🕯️  Murgamü CLI",
 	long_about = "Murgamü CLI is a command-line tool for creating and managing Murgamü projects.\nIt provides a modular architecture for building scalable web applications in Rust. You can use it for hot reload too",
 	    disable_version_flag = true
 )]
@@ -35,6 +36,12 @@ enum Commands {
 	New {
 		#[arg(value_name = "PROJECT_NAME")]
 		name: String,
+		#[arg(long, action = ArgAction::SetTrue)]
+		starter: bool,
+		#[arg(long, action = ArgAction::SetTrue)]
+		basic: bool,
+		#[arg(long, action = ArgAction::SetTrue)]
+		full: bool,
 	},
 	#[command(
 		about = "Run project with hot reload",
@@ -60,7 +67,23 @@ fn main() {
 	};
 
 	let result = match command {
-		Commands::New { name } => execute(name),
+		Commands::New {
+			name,
+			starter,
+			basic,
+			full,
+		} => {
+			let template = if starter {
+				Some(TemplateTypeEnum::Starter)
+			} else if basic {
+				Some(TemplateTypeEnum::Basic)
+			} else if full {
+				Some(TemplateTypeEnum::Full)
+			} else {
+				None
+			};
+			execute(name, template)
+		}
 		Commands::Dev { dir } => dev_command(dir),
 	};
 
