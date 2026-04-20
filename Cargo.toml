@@ -10,7 +10,7 @@ categories = ["asynchronous", "web-programming", "web-programming::http-server"]
 publish = true
 
 [workspace]
-members = ["cli", "macros", "sandbox"]
+members = ["cli", "macros", "cli/sandbox"]
 
 [workspace.package]
 version = "0.8.9"
