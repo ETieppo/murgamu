@@ -7,20 +7,50 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
+/// The central configuration store for a Murgamu application.
+///
+/// `MurConfig` aggregates values from OS environment variables, `.env` files,
+/// and programmatic overrides into a single `HashMap<String, String>`. It
+/// provides typed accessors for common value types (strings, booleans, numbers,
+/// durations, byte sizes) and supports marking keys as secrets for safe
+/// debug output.
+///
+/// # Quick start
+///
+/// ```rust,ignore
+/// let config = MurConfig::from_env();
+/// let db_url = config.get_required("DATABASE_URL")?;
+/// let port: u16 = config.get_or("PORT", 3000);
+/// ```
+///
+/// For more control, use the builder:
+///
+/// ```rust,ignore
+/// let config = MurConfig::builder()
+///     .env_file(".env")
+///     .required("DATABASE_URL")
+///     .build()?;
+/// ```
 #[derive(Debug, Clone)]
 pub struct MurConfig {
+	/// All resolved configuration values.
 	pub values: HashMap<String, String>,
 	metadata: ConfigMetadata,
 }
 
+/// Internal metadata tracked alongside configuration values.
 #[derive(Debug, Clone, Default)]
 pub struct ConfigMetadata {
+	/// Paths of every file that was successfully loaded.
 	pub loaded_files: Vec<String>,
+	/// Keys whose values should be hidden in debug output.
 	pub secret_keys: Vec<String>,
+	/// The detected environment name (e.g. `"production"`).
 	pub environment: Option<String>,
 }
 
 impl MurConfig {
+	/// Creates an empty configuration with no values.
 	pub fn new() -> Self {
 		Self {
 			values: HashMap::new(),
@@ -28,6 +58,7 @@ impl MurConfig {
 		}
 	}
 
+	/// Creates a configuration pre-populated from a `HashMap`.
 	pub fn from_map(values: HashMap<String, String>) -> Self {
 		Self {
 			values,
@@ -35,6 +66,11 @@ impl MurConfig {
 		}
 	}
 
+	/// Creates a configuration by loading OS environment variables and any
+	/// `.env` files found on disk.
+	///
+	/// File loading order: `.env` → `.env.{profile}` → `.env.local`.
+	/// OS environment variables always take the highest priority.
 	pub fn from_env() -> Self {
 		let mut config = Self::new();
 		config.load_env();
@@ -42,10 +78,12 @@ impl MurConfig {
 		config
 	}
 
+	/// Returns a [`MurConfigBuilder`] for fluent configuration assembly.
 	pub fn builder() -> MurConfigBuilder {
 		MurConfigBuilder::new()
 	}
 
+	/// Loads all current OS environment variables into the value store.
 	pub fn load_env(&mut self) {
 		for (key, value) in std::env::vars() {
 			self.values.insert(key, value);
@@ -85,6 +123,9 @@ impl MurConfig {
 			.to_lowercase()
 	}
 
+	/// Reads and parses a `.env`-format (or JSON) file, merging its values in.
+	///
+	/// Returns an error if the file cannot be read.
 	pub fn load_file(&mut self, path: &str) -> MurConfigResult<()> {
 		let content = std::fs::read_to_string(path).map_err(|e| MurConfigError::FileError {
 			path: path.to_string(),
@@ -96,6 +137,7 @@ impl MurConfig {
 		Ok(())
 	}
 
+	/// Parses a `.env`-format string and inserts all key/value pairs.
 	pub fn parse_dotenv(&mut self, content: &str) {
 		for line in content.lines() {
 			let line = line.trim();
@@ -138,10 +180,12 @@ impl MurConfig {
 		value.to_string()
 	}
 
+	/// Returns the value for `key`, or `None` if it is not set.
 	pub fn get(&self, key: &str) -> Option<&String> {
 		self.values.get(key)
 	}
 
+	/// Returns the value for `key` as a `String`, falling back to `default`.
 	pub fn get_or_string(&self, key: &str, default: &str) -> String {
 		self.values
 			.get(key)
@@ -149,6 +193,7 @@ impl MurConfig {
 			.unwrap_or_else(|| default.to_string())
 	}
 
+	/// Returns the value for `key` parsed as `T`, falling back to `default`.
 	pub fn get_or<T: std::str::FromStr>(&self, key: &str, default: T) -> T {
 		self.values
 			.get(key)
@@ -156,6 +201,7 @@ impl MurConfig {
 			.unwrap_or(default)
 	}
 
+	/// Returns the value for `key`, returning an error if it is absent.
 	pub fn get_required(&self, key: &str) -> MurConfigResult<String> {
 		self.values
 			.get(key)
@@ -163,6 +209,8 @@ impl MurConfig {
 			.ok_or_else(|| MurConfigError::MissingKey(key.to_string()))
 	}
 
+	/// Returns the value for `key` parsed as `T`, returning an error if it is
+	/// absent or cannot be parsed.
 	pub fn get_required_as<T: std::str::FromStr>(&self, key: &str) -> MurConfigResult<T> {
 		let value = self.get_required(key)?;
 		value.parse().map_err(|_| MurConfigError::ParseError {
@@ -175,6 +223,9 @@ impl MurConfig {
 		})
 	}
 
+	/// Returns the value for `key` interpreted as a boolean.
+	///
+	/// The strings `"1"`, `"true"`, `"yes"`, and `"on"` are truthy (case-insensitive).
 	pub fn get_bool(&self, key: &str) -> Option<bool> {
 		self.values.get(key).map(|v| {
 			let v = v.to_lowercase();
@@ -182,10 +233,12 @@ impl MurConfig {
 		})
 	}
 
+	/// Returns the boolean value for `key`, falling back to `default`.
 	pub fn get_bool_or(&self, key: &str, default: bool) -> bool {
 		self.get_bool(key).unwrap_or(default)
 	}
 
+	/// Returns the value for `key` split on commas, trimming whitespace from each item.
 	pub fn get_list(&self, key: &str) -> Option<Vec<String>> {
 		self.values.get(key).map(|v| {
 			v.split(',')
@@ -195,42 +248,52 @@ impl MurConfig {
 		})
 	}
 
+	/// Returns the comma-separated list for `key`, falling back to `default`.
 	pub fn get_list_or(&self, key: &str, default: Vec<String>) -> Vec<String> {
 		self.get_list(key).unwrap_or(default)
 	}
 
+	/// Parses the value for `key` as a duration using [`parse_duration`].
 	pub fn get_duration(&self, key: &str) -> Option<std::time::Duration> {
 		self.values.get(key).and_then(|v| parse_duration(v))
 	}
 
+	/// Returns the parsed duration for `key`, falling back to `default`.
 	pub fn get_duration_or(&self, key: &str, default: std::time::Duration) -> std::time::Duration {
 		self.get_duration(key).unwrap_or(default)
 	}
 
+	/// Parses the value for `key` as a byte size using [`parse_size`].
 	pub fn get_size_bytes(&self, key: &str) -> Option<u64> {
 		self.values.get(key).and_then(|v| parse_size(v))
 	}
 
+	/// Returns the parsed byte size for `key`, falling back to `default`.
 	pub fn get_size_bytes_or(&self, key: &str, default: u64) -> u64 {
 		self.get_size_bytes(key).unwrap_or(default)
 	}
 
+	/// Inserts or overwrites `key` with `value`.
 	pub fn set(&mut self, key: impl Into<String>, value: impl Into<String>) {
 		self.values.insert(key.into(), value.into());
 	}
 
+	/// Sets `key` to `value` only if `key` is not already present.
 	pub fn set_default(&mut self, key: impl Into<String>, value: impl Into<String>) {
 		self.values.entry(key.into()).or_insert(value.into());
 	}
 
+	/// Removes `key` from the store, returning its previous value if any.
 	pub fn remove(&mut self, key: &str) -> Option<String> {
 		self.values.remove(key)
 	}
 
+	/// Returns `true` if `key` exists in the store.
 	pub fn has(&self, key: &str) -> bool {
 		self.values.contains_key(key)
 	}
 
+	/// Returns an error listing every key in `keys` that is not present.
 	pub fn validate_required(&self, keys: &[&str]) -> MurConfigResult<()> {
 		let missing: Vec<_> = keys.iter().filter(|k| !self.has(k)).collect();
 
@@ -248,40 +311,50 @@ impl MurConfig {
 		}
 	}
 
+	/// Marks `key` as a secret so its value is hidden in debug representations.
 	pub fn mark_secret(&mut self, key: &str) {
 		if !self.metadata.secret_keys.contains(&key.to_string()) {
 			self.metadata.secret_keys.push(key.to_string());
 		}
 	}
 
+	/// Returns `true` if `key` has been marked as a secret.
 	pub fn is_secret(&self, key: &str) -> bool {
 		self.metadata.secret_keys.contains(&key.to_string())
 	}
 
+	/// Returns the list of files that were successfully loaded.
 	pub fn loaded_files(&self) -> &[String] {
 		&self.metadata.loaded_files
 	}
 
+	/// Returns the detected environment name, if any.
 	pub fn environment(&self) -> Option<&String> {
 		self.metadata.environment.as_ref()
 	}
 
+	/// Returns an iterator over all configuration keys.
 	pub fn keys(&self) -> impl Iterator<Item = &String> {
 		self.values.keys()
 	}
 
+	/// Returns the total number of configuration entries.
 	pub fn len(&self) -> usize {
 		self.values.len()
 	}
 
+	/// Returns `true` if the configuration store is empty.
 	pub fn is_empty(&self) -> bool {
 		self.values.is_empty()
 	}
 
+	/// Wraps `self` in an [`Arc`] for shared ownership.
 	pub fn into_arc(self) -> Arc<Self> {
 		Arc::new(self)
 	}
 
+	/// Returns a new `MurConfig` containing only the keys that start with `prefix`,
+	/// with the prefix stripped from each key name.
 	pub fn subset(&self, prefix: &str) -> MurConfig {
 		let values: HashMap<String, String> = self
 			.values

@@ -1,3 +1,17 @@
+/// Parses a duration string into a [`std::time::Duration`].
+///
+/// Accepted formats:
+///
+/// | Input   | Meaning      |
+/// |---------|-------------|
+/// | `"30"`  | 30 seconds   |
+/// | `"500ms"` | 500 milliseconds |
+/// | `"30s"` | 30 seconds   |
+/// | `"5m"`  | 5 minutes    |
+/// | `"2h"`  | 2 hours      |
+/// | `"1d"`  | 1 day        |
+///
+/// Returns `None` for unrecognised formats.
 pub fn parse_duration(s: &str) -> Option<std::time::Duration> {
 	let s = s.trim().to_lowercase();
 
@@ -26,6 +40,18 @@ pub fn parse_duration(s: &str) -> Option<std::time::Duration> {
 		.map(|n| std::time::Duration::from_millis(n * multiplier))
 }
 
+/// Parses a human-readable byte-size string into a raw byte count.
+///
+/// Accepted formats:
+///
+/// | Input    | Meaning     |
+/// |----------|-------------|
+/// | `"1024"` | 1 024 bytes |
+/// | `"16KB"` | 16 384 bytes |
+/// | `"8MB"`  | 8 388 608 bytes |
+/// | `"2GB"`  | 2 147 483 648 bytes |
+///
+/// Returns `None` for unrecognised formats.
 pub fn parse_size(s: &str) -> Option<u64> {
 	let s = s.trim().to_uppercase();
 

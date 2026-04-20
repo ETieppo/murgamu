@@ -1,17 +1,39 @@
 use super::EnvServerDefaults;
 use std::fmt;
 
+/// The active deployment environment of the application.
+///
+/// `MurEnvProfile` is resolved from the first environment variable found in
+/// the sequence `MUR_ENV` → `APP_ENV` → `RUST_ENV` → `NODE_ENV`. If none is
+/// set, [`Development`](MurEnvProfile::Development) is assumed.
+///
+/// Each profile provides sensible defaults via
+/// [`server_defaults`](MurEnvProfile::server_defaults) and controls which
+/// `.env` files are loaded.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub enum MurEnvProfile {
+	/// Staging / pre-production environment.
 	Staging,
+	/// Live production environment.
 	Production,
+	/// Automated test / CI environment.
 	Test,
+	/// A non-standard environment identified by name.
 	Custom(String),
+	/// Local development environment (default).
 	#[default]
 	Development,
 }
 
 impl MurEnvProfile {
+	/// Parses an environment name string into the corresponding profile.
+	///
+	/// Recognised aliases:
+	/// - `"development"` | `"dev"` | `"local"` → [`Development`](Self::Development)
+	/// - `"staging"` | `"stage"` | `"stg"` → [`Staging`](Self::Staging)
+	/// - `"production"` | `"prod"` | `"live"` → [`Production`](Self::Production)
+	/// - `"test"` | `"testing"` | `"ci"` → [`Test`](Self::Test)
+	/// - anything else → [`Custom(name)`](Self::Custom)
 	pub fn from_name(s: &str) -> Self {
 		match s.to_lowercase().as_str() {
 			"development" | "dev" | "local" => MurEnvProfile::Development,
@@ -22,6 +44,7 @@ impl MurEnvProfile {
 		}
 	}
 
+	/// Returns the canonical lowercase name of the profile.
 	pub fn as_str(&self) -> &str {
 		match self {
 			MurEnvProfile::Development => "development",
@@ -32,38 +55,52 @@ impl MurEnvProfile {
 		}
 	}
 
+	/// Returns `true` if this is the [`Development`](Self::Development) profile.
 	pub fn is_development(&self) -> bool {
 		matches!(self, MurEnvProfile::Development)
 	}
 
+	/// Returns `true` if this is the [`Staging`](Self::Staging) profile.
 	pub fn is_staging(&self) -> bool {
 		matches!(self, MurEnvProfile::Staging)
 	}
 
+	/// Returns `true` if this is the [`Production`](Self::Production) profile.
 	pub fn is_production(&self) -> bool {
 		matches!(self, MurEnvProfile::Production)
 	}
 
+	/// Returns `true` if this is the [`Test`](Self::Test) profile.
 	pub fn is_test(&self) -> bool {
 		matches!(self, MurEnvProfile::Test)
 	}
 
+	/// Returns `true` if this is a [`Custom`](Self::Custom) profile.
 	pub fn is_custom(&self) -> bool {
 		matches!(self, MurEnvProfile::Custom(_))
 	}
 
+	/// Returns `true` for profiles that behave like production
+	/// ([`Production`](Self::Production) and [`Staging`](Self::Staging)).
 	pub fn is_production_like(&self) -> bool {
 		matches!(self, MurEnvProfile::Production | MurEnvProfile::Staging)
 	}
 
+	/// Returns `true` for profiles that behave like development
+	/// ([`Development`](Self::Development) and [`Test`](Self::Test)).
 	pub fn is_development_like(&self) -> bool {
 		matches!(self, MurEnvProfile::Development | MurEnvProfile::Test)
 	}
 
+	/// Returns the path of the profile-specific `.env` file (e.g. `.env.production`).
 	pub fn env_file(&self) -> String {
 		format!(".env.{}", self.as_str())
 	}
 
+	/// Returns the ordered list of `.env` file paths to load for this profile.
+	///
+	/// Order: `.env` → `.env.{profile}` → `.env.local`.
+	/// Later files take precedence over earlier ones.
 	pub fn env_files(&self) -> Vec<String> {
 		vec![
 			".env".to_string(),
@@ -72,6 +109,7 @@ impl MurEnvProfile {
 		]
 	}
 
+	/// Returns the recommended log level for this profile.
 	pub fn default_log_level(&self) -> &str {
 		match self {
 			MurEnvProfile::Development => "debug",
@@ -82,14 +120,17 @@ impl MurEnvProfile {
 		}
 	}
 
+	/// Returns `true` if verbose output should be enabled for this profile.
 	pub fn default_verbose(&self) -> bool {
 		matches!(self, MurEnvProfile::Development)
 	}
 
+	/// Returns `true` if debug features are enabled for this profile.
 	pub fn debug_enabled(&self) -> bool {
 		self.is_development_like()
 	}
 
+	/// Returns the human-readable display name of the profile.
 	pub fn display_name(&self) -> &str {
 		match self {
 			MurEnvProfile::Development => "Development",
@@ -100,6 +141,7 @@ impl MurEnvProfile {
 		}
 	}
 
+	/// Returns a representative emoji for the profile (useful in startup banners).
 	pub fn emoji(&self) -> &str {
 		match self {
 			MurEnvProfile::Development => "🔧",
@@ -110,6 +152,7 @@ impl MurEnvProfile {
 		}
 	}
 
+	/// Returns the default server configuration for this profile.
 	pub fn server_defaults(&self) -> EnvServerDefaults {
 		match self {
 			MurEnvProfile::Development => EnvServerDefaults {

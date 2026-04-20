@@ -1,7 +1,25 @@
 pub struct MurEnv;
 use super::MurEnvProfile;
 
+/// Utilities for reading and loading the application's runtime environment.
+///
+/// `MurEnv` resolves the active [`MurEnvProfile`] from standard environment
+/// variables and provides methods for loading `.env` files into the process
+/// environment so that every call to [`mur_env`](crate::mur_env) or
+/// [`std::env::var`] can find them.
+///
+/// # Environment variable resolution order
+///
+/// `MUR_ENV` → `APP_ENV` → `RUST_ENV` → `NODE_ENV` → `"development"`
+///
+/// # `.env` file loading order
+///
+/// `.env` → `.env.{profile}` → `.env.local`
+///
+/// Later files take precedence over earlier ones. OS environment variables
+/// are never overwritten — they always have the highest priority.
 impl MurEnv {
+	/// Detects and returns the active [`MurEnvProfile`].
 	pub fn current() -> MurEnvProfile {
 		let env_str = std::env::var("MUR_ENV")
 			.or_else(|_| std::env::var("APP_ENV"))
@@ -12,14 +30,16 @@ impl MurEnv {
 		MurEnvProfile::from_name(&env_str)
 	}
 
-	/// Loads `.env`, `.env.{profile}` and `.env.local` into the process environment.
+	/// Loads `.env`, `.env.{profile}`, and `.env.local` into the process environment.
 	///
-	/// Values already present in the OS environment are NOT overwritten, so real
-	/// env-vars always take priority over the files.
+	/// Keys already present in the OS environment are **not** overwritten, so
+	/// real environment variables always take priority over file contents.
 	///
 	/// # Safety
-	/// Mutates process-wide environment variables. Must be called before any
-	/// other threads are spawned (e.g. at the very start of `main`).
+	///
+	/// Mutates process-wide environment variables via [`std::env::set_var`].
+	/// Must be called before any other threads are spawned — typically at the
+	/// very top of `main` or inside [`MurServer::new`](crate::MurServer::new).
 	pub unsafe fn load() {
 		for file in Self::env_files() {
 			unsafe { Self::load_file_into_env(&file) };
@@ -67,38 +87,42 @@ impl MurEnv {
 		value.to_string()
 	}
 
-	/// Sets the current Mur environment profile.
+	/// Overrides the active environment profile.
 	///
 	/// # Safety
-	/// This function mutates process environment variables.
-	/// The caller must guarantee that no other threads are concurrently
-	/// reading or writing environment variables while this function runs.
-	/// Typically this means it must be called during program initialization
-	/// before any threads are spawned.
+	///
+	/// Mutates the process-wide `MUR_ENV` environment variable. Must be called
+	/// before any other threads are spawned.
 	pub unsafe fn set(profile: MurEnvProfile) {
 		unsafe { std::env::set_var("MUR_ENV", profile.as_str()) };
 	}
 
+	/// Returns `true` if the active profile is [`Development`](MurEnvProfile::Development).
 	pub fn is_development() -> bool {
 		Self::current().is_development()
 	}
 
+	/// Returns `true` if the active profile is [`Production`](MurEnvProfile::Production).
 	pub fn is_production() -> bool {
 		Self::current().is_production()
 	}
 
+	/// Returns `true` if the active profile is [`Staging`](MurEnvProfile::Staging).
 	pub fn is_staging() -> bool {
 		Self::current().is_staging()
 	}
 
+	/// Returns `true` if the active profile is [`Test`](MurEnvProfile::Test).
 	pub fn is_test() -> bool {
 		Self::current().is_test()
 	}
 
+	/// Returns the path of the profile-specific `.env` file (e.g. `.env.production`).
 	pub fn env_file() -> String {
 		Self::current().env_file()
 	}
 
+	/// Returns the ordered list of `.env` files to load for the active profile.
 	pub fn env_files() -> Vec<String> {
 		Self::current().env_files()
 	}

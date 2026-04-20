@@ -1,11 +1,21 @@
 use std::fmt;
 
+/// Error type for configuration loading and validation failures.
+///
+/// Returned by [`MurConfig`](crate::MurConfig) and [`MurConfigBuilder`](crate::MurConfigBuilder)
+/// operations when a required key is missing, a value cannot be parsed, or a
+/// configuration file cannot be read.
 #[derive(Debug, Clone)]
 pub enum MurConfigError {
+	/// A required configuration key was not found in any source.
 	MissingKey(String),
+	/// A configuration value could not be parsed into the target type.
 	ParseError { key: String, message: String },
+	/// A configuration file could not be opened or read.
 	FileError { path: String, message: String },
+	/// A custom validation rule was violated.
 	ValidationError(String),
+	/// Multiple configuration errors aggregated into a single value.
 	Multiple(Vec<MurConfigError>),
 }
 
