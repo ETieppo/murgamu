@@ -1,5 +1,5 @@
 use crate::generators::{ProjectGenerator, TemplateTypeEnum};
-use cliclack::{log, select};
+use cliclack::select;
 
 pub fn execute(
 	project_name: String,
