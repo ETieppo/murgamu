@@ -8,7 +8,7 @@ use_try_shorthand = true
 # where_single_line = true                # unstable
 # wrap_comments = true                    # unstable
 # imports_granularity = "Item"            # unstable
-# reorder_impl_items                      # unstable
+# reorder_impl_items = true               # unstable
 # group_imports = "StdExternalCrate"      # unstable
 # struct_field_align_threshold = 20       # unstable
 # overflow_delimited_expr = true          # unstable
