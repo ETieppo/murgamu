@@ -4,6 +4,7 @@ mod templates;
 
 use crate::commands::dev_command;
 use crate::commands::execute;
+use crate::commands::new_fmt_command;
 use crate::generators::TemplateTypeEnum;
 use clap::ArgAction;
 use clap::Parser;
@@ -51,6 +52,20 @@ enum Commands {
 		#[arg(value_name = "DIR")]
 		dir: Option<String>,
 	},
+	#[command(
+		about = "Add .rustfmt.toml inside project",
+		long_about = "Create .rustfmt.toml into project, the file will be created at actual directory if not agrgs was provided, otherwise inside provided dir"
+	)]
+	NewFmt {
+		#[arg(value_name = "DIR")]
+		dir: Option<String>,
+		#[arg(long, action=ArgAction::SetTrue)]
+		overwrite: bool,
+		#[arg(long, action=ArgAction::SetTrue)]
+		unstable: bool,
+		#[arg(long, action=ArgAction::SetTrue)]
+		merge:bool
+	},
 }
 
 fn main() {
@@ -85,6 +100,12 @@ fn main() {
 			execute(name, template)
 		}
 		Commands::Dev { dir } => dev_command(dir),
+		Commands::NewFmt {
+			dir,
+			unstable,
+			overwrite,
+			merge
+		} => new_fmt_command(dir, unstable, overwrite, merge),
 	};
 
 	if let Err(e) = result {
