@@ -7,6 +7,7 @@ use super::config::MurServerConfig;
 use super::guard::MurGuard;
 use super::interceptor::MurInterceptor;
 use super::middleware::MurMiddleware;
+use super::middleware::cors::MurCors;
 use super::module::MurModule;
 use super::router::MurRouter;
 use super::runner::MurServerRunner;
@@ -296,6 +297,21 @@ impl MurServer {
 		}
 		for instance in self.interceptor_instances {
 			router.add_interceptor_boxed(instance);
+		}
+
+		let has_custom_cors = self.middleware.iter().any(|m| m.name() == "MurCors");
+		for mw in self.middleware {
+			router.add_middleware_boxed(mw);
+		}
+		if !has_custom_cors {
+			let cors = if self.config.enable_cors
+				&& !self.config.cors_origins.iter().any(|o| o == "*")
+			{
+				MurCors::new().allow_origins(self.config.cors_origins.clone())
+			} else {
+				MurCors::permissive()
+			};
+			router.prepend_middleware(cors);
 		}
 
 		for (module, module_container) in self.modules.iter().zip(module_containers.iter()) {

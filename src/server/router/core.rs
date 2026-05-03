@@ -60,9 +60,6 @@ impl MurRouter {
 
 	pub fn register_controller(&mut self, controller: Arc<dyn MurController>) {
 		let controller_name = controller.name().to_string();
-
-		// Passa &self.container em vez de Arc::clone -- o trait agora recebe &MurServiceContainer.
-		// O Arc do controller (self: Arc<Self>) ja estava correto; so o container mudou.
 		let routes = controller.routes(&self.container);
 
 		for route_def in routes {
@@ -167,6 +164,14 @@ impl MurRouter {
 
 	pub fn add_middleware(&mut self, middleware: impl MurMiddleware + 'static) {
 		self.global_middleware.push(Arc::new(middleware));
+	}
+
+	pub fn add_middleware_boxed(&mut self, middleware: Box<dyn MurMiddleware + Send + Sync>) {
+		self.global_middleware.push(Arc::from(middleware));
+	}
+
+	pub fn prepend_middleware(&mut self, middleware: impl MurMiddleware + 'static) {
+		self.global_middleware.insert(0, Arc::new(middleware));
 	}
 
 	pub fn add_pipe_boxed(&mut self, pipe: Box<dyn MurPipeDyn>) {
@@ -320,42 +325,75 @@ impl MurRouter {
 		println!();
 	}
 
-	pub async fn handle_direct(&self, data: Result<PreprocessedBody, MurError>) -> MurRes {
-		match data {
-			Ok(preprocess) => {
-				let route_match = self.find_route(&preprocess.method, &preprocess.path);
+	pub async fn handle_direct(self: Arc<Self>, data: Result<PreprocessedBody, MurError>) -> MurRes {
+		let preprocess = match data {
+			Ok(p) => p,
+			Err(e) => return Err(e),
+		};
 
-				if route_match.is_none() {
-					if preprocess.method == "OPTIONS" {
-						return self.handle_options(preprocess.path);
-					}
+		let ctx = MurRequestContext::new(
+			preprocess.parts,
+			preprocess.body_bytes,
+			MurPathParams::new(),
+			Arc::clone(&self.container),
+		);
 
-					if preprocess.method == "HEAD"
-						&& let Some((route, params)) = self.find_route("GET", &preprocess.path)
-					{
-						let ctx = MurRequestContext::new(
-							preprocess.parts,
-							preprocess.body_bytes,
-							params,
-							Arc::clone(&self.container),
-						);
-						return self.execute_handler(route, ctx).await;
-					}
-					return self.handle_not_found(&preprocess.path);
-				}
-
-				let (route, path_params) = route_match.unwrap();
-				let ctx = MurRequestContext::new(
-					preprocess.parts,
-					preprocess.body_bytes,
-					path_params,
-					Arc::clone(&self.container),
-				);
-
-				self.execute_handler(route, ctx).await
-			}
-			Err(e) => Err(e),
+		if self.global_middleware.is_empty() {
+			return self.route_ctx(preprocess.method, preprocess.path, ctx).await;
 		}
+
+		let router = Arc::clone(&self);
+		let method = Arc::new(preprocess.method);
+		let path = Arc::new(preprocess.path);
+
+		let terminal: Arc<dyn Fn(MurRequestContext) -> crate::server::aliases::MurFuture + Send + Sync> = {
+			let router = Arc::clone(&router);
+			let method = Arc::clone(&method);
+			let path = Arc::clone(&path);
+			Arc::new(move |ctx: MurRequestContext| {
+				let router = Arc::clone(&router);
+				let method = Arc::clone(&method);
+				let path = Arc::clone(&path);
+				Box::pin(async move {
+					router.route_ctx((*method).clone(), (*path).clone(), ctx).await
+				})
+			})
+		};
+
+		let chain = self.global_middleware.iter().rev().fold(
+			terminal,
+			|next_handler, mw| {
+				let mw = Arc::clone(mw);
+				Arc::new(move |ctx: MurRequestContext| {
+					let next = crate::server::middleware::MurNext::new(Arc::clone(&next_handler));
+					mw.handle(ctx, next)
+				}) as Arc<dyn Fn(MurRequestContext) -> crate::server::aliases::MurFuture + Send + Sync>
+			},
+		);
+
+		crate::server::middleware::MurNext::new(chain).run(ctx).await
+	}
+
+	async fn route_ctx(&self, method: String, path: String, mut ctx: MurRequestContext) -> MurRes {
+		let route_match = self.find_route(&method, &path);
+
+		if route_match.is_none() {
+			if method == "OPTIONS" {
+				return self.handle_options(path);
+			}
+
+			if method == "HEAD"
+				&& let Some((route, params)) = self.find_route("GET", &path)
+			{
+				ctx.path_params = params;
+				return self.execute_handler(route, ctx).await;
+			}
+			return self.handle_not_found(&path);
+		}
+
+		let (route, path_params) = route_match.unwrap();
+		ctx.path_params = path_params;
+		self.execute_handler(route, ctx).await
 	}
 
 	async fn execute_handler(&self, route: &MurRouteEntry, ctx: MurRequestContext) -> MurRes {
