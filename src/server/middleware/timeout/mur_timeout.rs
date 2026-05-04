@@ -169,19 +169,22 @@ impl MurMiddleware for MurTimeout {
 
 			match result {
 				Ok(response) => {
-					if config.include_timeout_header
-						&& let Ok(mut resp) = response
-					{
-						if let Ok(value) = format!("{}ms", start.elapsed().as_millis())
-							.parse::<hyper::header::HeaderValue>()
-							&& let Ok(header_name) = hyper::header::HeaderName::from_bytes(
-								config.timeout_header_name.as_bytes(),
-							) {
-							resp.headers_mut().insert(header_name, value);
-						}
-						return Ok(resp);
+					if config.include_timeout_header {
+						let elapsed = start.elapsed();
+						response.map_response(|mut resp| {
+							if let Ok(value) = format!("{}ms", elapsed.as_millis())
+								.parse::<hyper::header::HeaderValue>()
+								&& let Ok(header_name) = hyper::header::HeaderName::from_bytes(
+									config.timeout_header_name.as_bytes(),
+								)
+							{
+								resp.headers_mut().insert(header_name, value);
+							}
+							resp
+						})
+					} else {
+						response
 					}
-					response
 				}
 				Err(_elapsed) => {
 					if config.log_timeouts {

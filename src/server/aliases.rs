@@ -1,4 +1,3 @@
-use super::error::MurError;
 use super::http::MurRequestContext;
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
@@ -8,8 +7,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
+pub use super::http::response::mur_res::MurCookie;
+pub use super::http::response::mur_res::MurRes;
+pub use super::http::response::mur_res::SameSite;
+
 pub type MurMainResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
-pub type MurRes = Result<Response<Full<Bytes>>, MurError>;
 pub type MurReq = MurRequestContext;
 pub type MurResInfallible = Result<Response<Full<Bytes>>, std::convert::Infallible>;
 pub type MurFuture = Pin<Box<dyn Future<Output = MurRes> + Send + 'static>>;

@@ -336,15 +336,17 @@ impl MurError {
 			"context": context
 		});
 
-		Ok(Response::builder()
-			.status(status)
-			.header("Content-Type", "application/json")
-			.body(Full::new(Bytes::from(
-				serde_json::to_string(&body).unwrap_or_else(|_| {
-					format!(r#"{{"error":"{}","status":{}}}"#, message, status.as_u16())
-				}),
-			)))
-			.unwrap())
+		MurRes::from(
+			Response::builder()
+				.status(status)
+				.header("Content-Type", "application/json")
+				.body(Full::new(Bytes::from(
+					serde_json::to_string(&body).unwrap_or_else(|_| {
+						format!(r#"{{"error":"{}","status":{}}}"#, message, status.as_u16())
+					}),
+				)))
+				.unwrap(),
+		)
 	}
 }
 

@@ -262,102 +262,98 @@ impl MurMiddleware for MurSecurityHeaders {
 		Box::pin(async move {
 			let result = next.run(ctx).await;
 
-			match result {
-				Ok(mut response) => {
-					let headers = response.headers_mut();
+			result.map_response(|mut response| {
+				let headers = response.headers_mut();
 
-					if let Some(ref csp) = config.content_security_policy
-						&& let Ok(v) = csp.parse()
-					{
-						headers.insert("Content-Security-Policy", v);
-					}
-
-					if let Some(ref xfo) = config.x_frame_options {
-						headers.insert("X-Frame-Options", xfo.as_str().parse().unwrap());
-					}
-
-					if config.x_content_type_options {
-						headers.insert("X-Content-Type-Options", "nosniff".parse().unwrap());
-					}
-
-					if let Some(ref xss) = config.x_xss_protection {
-						headers.insert("X-XSS-Protection", xss.as_str().parse().unwrap());
-					}
-
-					if let Some(ref hsts) = config.hsts
-						&& let Ok(v) = hsts.to_header_value().parse()
-					{
-						headers.insert("Strict-Transport-Security", v);
-					}
-
-					if let Some(ref rp) = config.referrer_policy {
-						headers.insert("Referrer-Policy", rp.as_str().parse().unwrap());
-					}
-
-					if let Some(ref pp) = config.permissions_policy
-						&& let Ok(v) = pp.parse()
-					{
-						headers.insert("Permissions-Policy", v);
-					}
-
-					if let Some(dns) = config.x_dns_prefetch_control {
-						let value = if dns { "on" } else { "off" };
-						headers.insert("X-DNS-Prefetch-Control", value.parse().unwrap());
-					}
-
-					if let Some(ref cdp) = config.x_permitted_cross_domain_policies {
-						headers.insert(
-							"X-Permitted-Cross-Domain-Policies",
-							cdp.as_str().parse().unwrap(),
-						);
-					}
-
-					if config.x_download_options {
-						headers.insert("X-Download-Options", "noopen".parse().unwrap());
-					}
-
-					if let Some(ref coep) = config.cross_origin_embedder_policy {
-						headers.insert(
-							"Cross-Origin-Embedder-Policy",
-							coep.as_str().parse().unwrap(),
-						);
-					}
-
-					if let Some(ref coop) = config.cross_origin_opener_policy {
-						headers
-							.insert("Cross-Origin-Opener-Policy", coop.as_str().parse().unwrap());
-					}
-
-					if let Some(ref corp) = config.cross_origin_resource_policy {
-						headers.insert(
-							"Cross-Origin-Resource-Policy",
-							corp.as_str().parse().unwrap(),
-						);
-					}
-
-					if config.origin_agent_cluster {
-						headers.insert("Origin-Agent-Cluster", "?1".parse().unwrap());
-					}
-
-					for (name, value) in &config.custom_headers {
-						if let (Ok(n), Ok(v)) = (
-							name.parse::<http::header::HeaderName>(),
-							value.parse::<http::header::HeaderValue>(),
-						) {
-							headers.insert(n, v);
-						}
-					}
-
-					for name in &config.remove_headers {
-						if let Ok(n) = name.parse::<http::header::HeaderName>() {
-							headers.remove(n);
-						}
-					}
-
-					Ok(response)
+				if let Some(ref csp) = config.content_security_policy
+					&& let Ok(v) = csp.parse()
+				{
+					headers.insert("Content-Security-Policy", v);
 				}
-				Err(e) => Err(e),
-			}
+
+				if let Some(ref xfo) = config.x_frame_options {
+					headers.insert("X-Frame-Options", xfo.as_str().parse().unwrap());
+				}
+
+				if config.x_content_type_options {
+					headers.insert("X-Content-Type-Options", "nosniff".parse().unwrap());
+				}
+
+				if let Some(ref xss) = config.x_xss_protection {
+					headers.insert("X-XSS-Protection", xss.as_str().parse().unwrap());
+				}
+
+				if let Some(ref hsts) = config.hsts
+					&& let Ok(v) = hsts.to_header_value().parse()
+				{
+					headers.insert("Strict-Transport-Security", v);
+				}
+
+				if let Some(ref rp) = config.referrer_policy {
+					headers.insert("Referrer-Policy", rp.as_str().parse().unwrap());
+				}
+
+				if let Some(ref pp) = config.permissions_policy
+					&& let Ok(v) = pp.parse()
+				{
+					headers.insert("Permissions-Policy", v);
+				}
+
+				if let Some(dns) = config.x_dns_prefetch_control {
+					let value = if dns { "on" } else { "off" };
+					headers.insert("X-DNS-Prefetch-Control", value.parse().unwrap());
+				}
+
+				if let Some(ref cdp) = config.x_permitted_cross_domain_policies {
+					headers.insert(
+						"X-Permitted-Cross-Domain-Policies",
+						cdp.as_str().parse().unwrap(),
+					);
+				}
+
+				if config.x_download_options {
+					headers.insert("X-Download-Options", "noopen".parse().unwrap());
+				}
+
+				if let Some(ref coep) = config.cross_origin_embedder_policy {
+					headers.insert(
+						"Cross-Origin-Embedder-Policy",
+						coep.as_str().parse().unwrap(),
+					);
+				}
+
+				if let Some(ref coop) = config.cross_origin_opener_policy {
+					headers.insert("Cross-Origin-Opener-Policy", coop.as_str().parse().unwrap());
+				}
+
+				if let Some(ref corp) = config.cross_origin_resource_policy {
+					headers.insert(
+						"Cross-Origin-Resource-Policy",
+						corp.as_str().parse().unwrap(),
+					);
+				}
+
+				if config.origin_agent_cluster {
+					headers.insert("Origin-Agent-Cluster", "?1".parse().unwrap());
+				}
+
+				for (name, value) in &config.custom_headers {
+					if let (Ok(n), Ok(v)) = (
+						name.parse::<http::header::HeaderName>(),
+						value.parse::<http::header::HeaderValue>(),
+					) {
+						headers.insert(n, v);
+					}
+				}
+
+				for name in &config.remove_headers {
+					if let Ok(n) = name.parse::<http::header::HeaderName>() {
+						headers.remove(n);
+					}
+				}
+
+				response
+			})
 		})
 	}
 

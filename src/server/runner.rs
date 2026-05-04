@@ -253,7 +253,7 @@ fn make_service(
 		let router = Arc::clone(&router);
 		async move {
 			let req = limited_body_extraction(req, rate_limit).await;
-			match router.handle_direct(req).await {
+			match router.handle_direct(req).await.into_result() {
 				Ok(res) => Ok(res),
 				Err(err) => Ok(err.into_response()),
 			}

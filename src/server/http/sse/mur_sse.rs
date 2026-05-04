@@ -65,7 +65,7 @@ impl MurSse {
 	pub fn json<T: serde::Serialize>(self, value: &T) -> MurRes {
 		match MurSseEvent::new().json(value) {
 			Ok(event) => self.event(event),
-			Err(e) => Err(MurError::Internal(e.to_string())),
+			Err(e) => MurRes::from(MurError::Internal(e.to_string())),
 		}
 	}
 
@@ -91,9 +91,11 @@ impl MurSse {
 			response = response.header(key.as_str(), value.as_str());
 		}
 
-		response
-			.body(Full::new(Bytes::from(body)))
-			.map_err(|e| MurError::Internal(e.to_string()))
+		MurRes::from_result(
+			response
+				.body(Full::new(Bytes::from(body)))
+				.map_err(|e| MurError::Internal(e.to_string())),
+		)
 	}
 
 	pub fn config(&self) -> &MurSseConfig {

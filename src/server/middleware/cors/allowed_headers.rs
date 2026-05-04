@@ -18,7 +18,9 @@ impl AllowedHeaders {
 
 	pub fn header_value(&self, requested_headers: Option<&str>) -> Option<String> {
 		match self {
-			AllowedHeaders::Any => Some("*".to_string()),
+			AllowedHeaders::Any => requested_headers
+				.map(|h| h.to_string())
+				.or_else(|| Some("*".to_string())),
 			AllowedHeaders::Mirror => requested_headers.map(|h| h.to_string()),
 			AllowedHeaders::List(headers) => {
 				if headers.is_empty() {

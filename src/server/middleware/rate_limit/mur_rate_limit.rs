@@ -168,24 +168,25 @@ impl MurThrottler {
 		let status = http::StatusCode::from_u16(self.config.status_code)
 			.unwrap_or(http::StatusCode::TOO_MANY_REQUESTS);
 
-		let mut response = MurHttpResponse::status(status).json(serde_json::json!({
+		let base = MurHttpResponse::status(status).json(serde_json::json!({
 			"error": "Too Many Requests",
 			"message": message,
 			"retry_after": retry_after
-		}))?;
+		}));
 
 		if self.config.include_headers {
-			let headers = response.headers_mut();
-			headers.insert(
-				"X-RateLimit-Limit",
-				self.config.max_requests.to_string().parse().unwrap(),
-			);
-			headers.insert("X-RateLimit-Remaining", "0".parse().unwrap());
-			headers.insert("X-RateLimit-Reset", reset_at.to_string().parse().unwrap());
-			headers.insert("Retry-After", retry_after.to_string().parse().unwrap());
+			let max = self.config.max_requests;
+			return base.map_response(move |mut resp| {
+				let headers = resp.headers_mut();
+				if let Ok(v) = max.to_string().parse() { headers.insert("X-RateLimit-Limit", v); }
+				if let Ok(v) = "0".parse() { headers.insert("X-RateLimit-Remaining", v); }
+				if let Ok(v) = reset_at.to_string().parse() { headers.insert("X-RateLimit-Reset", v); }
+				if let Ok(v) = retry_after.to_string().parse() { headers.insert("Retry-After", v); }
+				resp
+			});
 		}
 
-		Ok(response)
+		base
 	}
 
 	pub fn add_headers(
@@ -274,24 +275,21 @@ impl MurMiddleware for MurThrottler {
 		Box::pin(async move {
 			let result = next.run(ctx).await;
 
-			match result {
-				Ok(mut response) => {
-					if include_headers {
-						let headers = response.headers_mut();
-						headers.insert(
-							"X-RateLimit-Limit",
-							max_requests.to_string().parse().unwrap(),
-						);
-						headers.insert(
-							"X-RateLimit-Remaining",
-							remaining.to_string().parse().unwrap(),
-						);
-						headers.insert("X-RateLimit-Reset", reset_at.to_string().parse().unwrap());
-					}
-					Ok(response)
+			result.map_response(|mut response| {
+				if include_headers {
+					let headers = response.headers_mut();
+					headers.insert(
+						"X-RateLimit-Limit",
+						max_requests.to_string().parse().unwrap(),
+					);
+					headers.insert(
+						"X-RateLimit-Remaining",
+						remaining.to_string().parse().unwrap(),
+					);
+					headers.insert("X-RateLimit-Reset", reset_at.to_string().parse().unwrap());
 				}
-				Err(e) => Err(e),
-			}
+				response
+			})
 		})
 	}
 

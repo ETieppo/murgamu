@@ -33,19 +33,23 @@ impl MurResponder {
 	}
 
 	pub fn redirect(location: &str) -> MurRes {
-		Ok(Response::builder()
-			.status(StatusCode::FOUND)
-			.header("Location", location)
-			.body(Full::new(Bytes::new()))
-			.unwrap())
+		MurRes::from(
+			Response::builder()
+				.status(StatusCode::FOUND)
+				.header("Location", location)
+				.body(Full::new(Bytes::new()))
+				.unwrap(),
+		)
 	}
 
 	pub fn redirect_permanent(location: &str) -> MurRes {
-		Ok(Response::builder()
-			.status(StatusCode::MOVED_PERMANENTLY)
-			.header("Location", location)
-			.body(Full::new(Bytes::new()))
-			.unwrap())
+		MurRes::from(
+			Response::builder()
+				.status(StatusCode::MOVED_PERMANENTLY)
+				.header("Location", location)
+				.body(Full::new(Bytes::new()))
+				.unwrap(),
+		)
 	}
 
 	pub fn no_content() -> MurRes {
@@ -97,8 +101,10 @@ impl MurResponder {
 			builder = builder.header(name, value);
 		}
 
-		Ok(builder
-			.body(Full::new(Bytes::from(body.to_string())))
-			.unwrap())
+		MurRes::from(
+			builder
+				.body(Full::new(Bytes::from(body.to_string())))
+				.unwrap(),
+		)
 	}
 }

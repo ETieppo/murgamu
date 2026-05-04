@@ -328,7 +328,7 @@ impl MurRouter {
 	pub async fn handle_direct(self: Arc<Self>, data: Result<PreprocessedBody, MurError>) -> MurRes {
 		let preprocess = match data {
 			Ok(p) => p,
-			Err(e) => return Err(e),
+			Err(e) => return e.into(),
 		};
 
 		let ctx = MurRequestContext::new(
@@ -442,8 +442,8 @@ impl MurRouter {
 			response = interceptor.after(&ctx, response).await;
 		}
 
-		match response {
-			Ok(res) => Ok(res),
+		match response.into_result() {
+			Ok(res) => MurRes::from(res),
 			Err(e) => self.handle_error(e),
 		}
 	}
@@ -512,17 +512,16 @@ impl MurRouter {
 			methods.join(", ")
 		};
 
-		Ok(Response::builder()
-			.status(StatusCode::NO_CONTENT)
-			.header("Allow", &allow)
-			.header("Access-Control-Allow-Methods", &allow)
-			.header(
-				"Access-Control-Allow-Headers",
-				"Content-Type, Authorization",
-			)
-			.header("Access-Control-Max-Age", "86400")
-			.body(Full::new(Bytes::new()))
-			.unwrap())
+		MurRes::from(
+			Response::builder()
+				.status(StatusCode::NO_CONTENT)
+				.header("Allow", &allow)
+				.header("Access-Control-Allow-Methods", &allow)
+				.header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				.header("Access-Control-Max-Age", "86400")
+				.body(Full::new(Bytes::new()))
+				.unwrap(),
+		)
 	}
 
 	fn handle_error(&self, error: MurError) -> MurRes {
@@ -549,6 +548,6 @@ impl MurRouter {
 			return handler(error);
 		}
 
-		Err(error)
+		MurRes::from(error)
 	}
 }

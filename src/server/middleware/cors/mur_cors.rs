@@ -332,14 +332,13 @@ impl MurMiddleware for MurCors {
 				let headers =
 					cors.build_cors_headers(Some(origin), requested_headers.as_deref(), true);
 
-				let response = MurHttpResponse::no_content();
-				if let Ok(mut resp) = response {
-					for (name, value) in headers {
+				let cors_headers_preflight = headers;
+				return MurHttpResponse::no_content().map_response(|mut resp| {
+					for (name, value) in cors_headers_preflight {
 						resp.headers_mut().insert(name, value);
 					}
-					return Ok(resp);
-				}
-				return response;
+					resp
+				});
 			}
 
 			let requested_headers = ctx
@@ -347,17 +346,13 @@ impl MurMiddleware for MurCors {
 				.map(|s| s.to_string());
 			let cors_headers =
 				cors.build_cors_headers(Some(origin), requested_headers.as_deref(), false);
-			let result = next.run(ctx).await;
 
-			match result {
-				Ok(mut response) => {
-					for (name, value) in cors_headers {
-						response.headers_mut().insert(name, value);
-					}
-					Ok(response)
+			next.run(ctx).await.map_response(|mut response| {
+				for (name, value) in cors_headers {
+					response.headers_mut().insert(name, value);
 				}
-				Err(e) => Err(e),
-			}
+				response
+			})
 		})
 	}
 

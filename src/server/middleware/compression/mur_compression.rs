@@ -3,7 +3,7 @@ use super::config::MurCompressionConfig;
 use super::deflate::MurDeflateEncoder;
 use super::gzip::MurGzipEncoder;
 use super::level::MurCompressionLevel;
-use crate::server::aliases::MurFuture;
+use crate::server::aliases::{MurFuture, MurRes};
 use crate::server::error::MurError;
 use crate::server::http::MurRequestContext;
 use crate::server::middleware::{MurMiddleware, MurNext};
@@ -212,10 +212,10 @@ impl MurMiddleware for MurCompression {
 			let accept_encoding = ctx.header(ACCEPT_ENCODING.as_str()).map(|s| s.to_string());
 			let result = next.run(ctx).await;
 
-			match result {
+			match result.into_result() {
 				Ok(response) => {
 					if response.headers().contains_key(CONTENT_ENCODING) {
-						return Ok(response);
+						return MurRes::from(response);
 					}
 
 					let content_type = response
@@ -225,27 +225,29 @@ impl MurMiddleware for MurCompression {
 						.map(|s| s.to_string());
 
 					if !compression.should_compress_content_type(content_type.as_deref()) {
-						return Ok(response);
+						return MurRes::from(response);
 					}
 
 					let (parts, body) = response.into_parts();
 					let collected = match body.collect().await {
 						Ok(c) => c.to_bytes(),
 						Err(_) => {
-							return Err(MurError::Internal("Failed to read response body".into()))
+							return MurRes::from(MurError::Internal(
+								"Failed to read response body".into(),
+							))
 						}
 					};
 
 					if collected.len() < compression.config.min_size {
 						let response = Response::from_parts(parts, Full::new(collected));
-						return Ok(response);
+						return MurRes::from(response);
 					}
 
 					let algorithm = match compression.select_algorithm(accept_encoding.as_deref()) {
 						Some(algo) => algo,
 						None => {
 							let response = Response::from_parts(parts, Full::new(collected));
-							return Ok(response);
+							return MurRes::from(response);
 						}
 					};
 
@@ -253,7 +255,7 @@ impl MurMiddleware for MurCompression {
 						Some(compressed) => {
 							if compressed.len() >= collected.len() {
 								let response = Response::from_parts(parts, Full::new(collected));
-								return Ok(response);
+								return MurRes::from(response);
 							}
 
 							let mut response = Response::from_parts(
@@ -275,15 +277,15 @@ impl MurMiddleware for MurCompression {
 								response.headers_mut().insert("vary", vary);
 							}
 
-							Ok(response)
+							MurRes::from(response)
 						}
 						None => {
 							let response = Response::from_parts(parts, Full::new(collected));
-							Ok(response)
+							MurRes::from(response)
 						}
 					}
 				}
-				Err(e) => Err(e),
+				Err(e) => MurRes::from(e),
 			}
 		})
 	}
