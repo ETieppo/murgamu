@@ -325,7 +325,10 @@ impl MurRouter {
 		println!();
 	}
 
-	pub async fn handle_direct(self: Arc<Self>, data: Result<PreprocessedBody, MurError>) -> MurRes {
+	pub async fn handle_direct(
+		self: Arc<Self>,
+		data: Result<PreprocessedBody, MurError>,
+	) -> MurRes {
 		let preprocess = match data {
 			Ok(p) => p,
 			Err(e) => return e.into(),
@@ -339,14 +342,18 @@ impl MurRouter {
 		);
 
 		if self.global_middleware.is_empty() {
-			return self.route_ctx(preprocess.method, preprocess.path, ctx).await;
+			return self
+				.route_ctx(preprocess.method, preprocess.path, ctx)
+				.await;
 		}
 
 		let router = Arc::clone(&self);
 		let method = Arc::new(preprocess.method);
 		let path = Arc::new(preprocess.path);
 
-		let terminal: Arc<dyn Fn(MurRequestContext) -> crate::server::aliases::MurFuture + Send + Sync> = {
+		let terminal: Arc<
+			dyn Fn(MurRequestContext) -> crate::server::aliases::MurFuture + Send + Sync,
+		> = {
 			let router = Arc::clone(&router);
 			let method = Arc::clone(&method);
 			let path = Arc::clone(&path);
@@ -355,23 +362,33 @@ impl MurRouter {
 				let method = Arc::clone(&method);
 				let path = Arc::clone(&path);
 				Box::pin(async move {
-					router.route_ctx((*method).clone(), (*path).clone(), ctx).await
+					router
+						.route_ctx((*method).clone(), (*path).clone(), ctx)
+						.await
 				})
 			})
 		};
 
-		let chain = self.global_middleware.iter().rev().fold(
-			terminal,
-			|next_handler, mw| {
+		let chain = self
+			.global_middleware
+			.iter()
+			.rev()
+			.fold(terminal, |next_handler, mw| {
 				let mw = Arc::clone(mw);
 				Arc::new(move |ctx: MurRequestContext| {
 					let next = crate::server::middleware::MurNext::new(Arc::clone(&next_handler));
 					mw.handle(ctx, next)
-				}) as Arc<dyn Fn(MurRequestContext) -> crate::server::aliases::MurFuture + Send + Sync>
-			},
-		);
+				})
+					as Arc<
+						dyn Fn(MurRequestContext) -> crate::server::aliases::MurFuture
+							+ Send
+							+ Sync,
+					>
+			});
 
-		crate::server::middleware::MurNext::new(chain).run(ctx).await
+		crate::server::middleware::MurNext::new(chain)
+			.run(ctx)
+			.await
 	}
 
 	async fn route_ctx(&self, method: String, path: String, mut ctx: MurRequestContext) -> MurRes {
@@ -408,7 +425,7 @@ impl MurRouter {
 		}
 
 		for guard in &self.global_guards {
-			if !guard.check_can_activate(&ctx).await {
+			if !route.access_control.is_public && !guard.check_can_activate(&ctx).await {
 				return guard.rejection_response();
 			}
 		}
@@ -517,7 +534,10 @@ impl MurRouter {
 				.status(StatusCode::NO_CONTENT)
 				.header("Allow", &allow)
 				.header("Access-Control-Allow-Methods", &allow)
-				.header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				.header(
+					"Access-Control-Allow-Headers",
+					"Content-Type, Authorization",
+				)
 				.header("Access-Control-Max-Age", "86400")
 				.body(Full::new(Bytes::new()))
 				.unwrap(),
