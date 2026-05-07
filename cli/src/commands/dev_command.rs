@@ -8,14 +8,16 @@ pub fn dev_command(dir: Option<String>) -> Result<(), Box<dyn std::error::Error>
 		Some(d) => std::path::PathBuf::from(d).canonicalize()?,
 		None => std::env::current_dir()?,
 	};
-
-	let (tx, rx) = mpsc::channel::<()>();
-	let mut watcher = notify::recommended_watcher(move |_| {
-		let _ = tx.send(());
-	})?;
-
 	let src_path = cwd.join("src");
 	let cargo_path = cwd.join("Cargo.toml");
+	let (tx, rx) = mpsc::channel::<()>();
+	let mut watcher = notify::recommended_watcher(move |res: notify::Result<notify::Event>| {
+		if let Ok(event) = res
+			&& (event.kind.is_modify() || event.kind.is_create() || event.kind.is_remove())
+		{
+			let _ = tx.send(());
+		}
+	})?;
 
 	if src_path.exists() {
 		watcher.watch(&src_path, RecursiveMode::Recursive)?;
@@ -23,8 +25,6 @@ pub fn dev_command(dir: Option<String>) -> Result<(), Box<dyn std::error::Error>
 	if cargo_path.exists() {
 		watcher.watch(&cargo_path, RecursiveMode::NonRecursive)?;
 	}
-
-	println!("[mur] Starting development server...");
 
 	loop {
 		let mut child = spawn_cargo_run(&cwd)?;
