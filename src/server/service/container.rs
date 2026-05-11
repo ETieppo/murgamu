@@ -1,7 +1,7 @@
 use super::MurService;
 use crate::server::provider::MurProvider;
 use crate::server::provider::MurProviderScope;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -209,19 +209,17 @@ impl MurServiceContainer {
 
 	#[inline]
 	fn downcast_arc<T: MurService>(&self, service: &Arc<dyn MurService>) -> Option<Arc<T>> {
-		let any_ref: &dyn Any = service.as_any();
-		if any_ref.downcast_ref::<T>().is_some() {
-			let ptr = Arc::as_ptr(service) as *const T;
-
-			// SAFETY: We confirmed that the underlying concrete type is T via
-			// downcast_ref. Incrementing the strong count before constructing
-			// a new Arc ensures the allocation is not freed prematurely.
-			unsafe {
-				Arc::increment_strong_count(ptr);
-				Some(Arc::from_raw(ptr))
-			}
-		} else {
-			None
+		if service.as_any().type_id() != TypeId::of::<T>() {
+			return None;
+		}
+		let ptr = Arc::as_ptr(service) as *const T;
+		// SAFETY: type_id() confirmed the concrete type behind the fat pointer is T.
+		// Arc::as_ptr on Arc<dyn Trait> (created from Arc<T>) returns the data
+		// pointer, which is *const T. Incrementing the strong count before from_raw
+		// keeps the allocation alive for the lifetime of the returned Arc.
+		unsafe {
+			Arc::increment_strong_count(ptr);
+			Some(Arc::from_raw(ptr))
 		}
 	}
 
@@ -281,6 +279,7 @@ impl std::fmt::Debug for MurServiceContainer {
 
 #[cfg(test)]
 mod tests {
+	use std::any::Any;
 	use super::*;
 
 	struct TestService {

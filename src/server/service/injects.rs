@@ -1,5 +1,5 @@
 use super::MurInjectable;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -77,16 +77,17 @@ impl MurInjects {
 		&self,
 		inject: &Arc<dyn MurInjectable + Send + Sync>,
 	) -> Option<Arc<T>> {
-		let any_ref: &dyn Any = inject.as_any();
-		if any_ref.downcast_ref::<T>().is_some() {
-			let ptr = Arc::as_ptr(inject) as *const T;
-
-			unsafe {
-				Arc::increment_strong_count(ptr);
-				Some(Arc::from_raw(ptr))
-			}
-		} else {
-			None
+		if inject.as_any().type_id() != TypeId::of::<T>() {
+			return None;
+		}
+		let ptr = Arc::as_ptr(inject) as *const T;
+		// SAFETY: type_id() confirmed the concrete type behind the fat pointer is T.
+		// Arc::as_ptr on Arc<dyn Trait> (created from Arc<T>) returns the data
+		// pointer, which is *const T. Incrementing the strong count before from_raw
+		// keeps the allocation alive for the lifetime of the returned Arc.
+		unsafe {
+			Arc::increment_strong_count(ptr);
+			Some(Arc::from_raw(ptr))
 		}
 	}
 }

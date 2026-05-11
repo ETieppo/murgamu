@@ -106,7 +106,7 @@ impl MurMultipartUtils {
 					}
 
 					if !config.allowed_mime_types.is_empty()
-						|| !config
+						&& !config
 							.allowed_mime_types
 							.iter()
 							.any(|t| t.eq_ignore_ascii_case(file.content_type()))
