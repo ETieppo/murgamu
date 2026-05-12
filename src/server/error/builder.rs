@@ -306,7 +306,10 @@ impl MurError {
 	pub fn into_response(self) -> MurResponse {
 		let status = self.status_code();
 		let kind = self.kind();
-		let message = self.to_string();
+		let message = match &self {
+			MurError::Internal(_) | MurError::Hyper(_) => "Internal Server Error".to_string(),
+			_ => self.message().to_string(),
+		};
 		let body = serde_json::json!({
 			"error": message,
 			"status": status.as_u16(),

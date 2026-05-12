@@ -34,16 +34,24 @@ impl InMemoryStore {
 	}
 
 	pub fn cleanup(&self, max_age: Duration) {
-		let mut last_cleanup = self.last_cleanup.write().unwrap();
+		// Fast path: read lock to avoid write contention on every request.
+		{
+			let last = self.last_cleanup.read().unwrap_or_else(|e| e.into_inner());
+			if last.elapsed() < self.cleanup_interval {
+				return;
+			}
+		}
+		// Double-check under write lock to prevent multiple concurrent cleanups.
+		let mut last_cleanup = self.last_cleanup.write().unwrap_or_else(|e| e.into_inner());
 		if last_cleanup.elapsed() < self.cleanup_interval {
 			return;
 		}
-
-		let mut data = self.data.write().unwrap();
 		let now = Instant::now();
-
-		data.retain(|_, entry| now.duration_since(entry.window_start) < max_age * 2);
 		*last_cleanup = now;
+		drop(last_cleanup); // Release before acquiring data lock to avoid deadlock.
+
+		let mut data = self.data.write().unwrap_or_else(|e| e.into_inner());
+		data.retain(|_, entry| now.duration_since(entry.window_start) < max_age * 2);
 	}
 }
 
@@ -58,41 +66,43 @@ impl MurThrottlerStore for InMemoryStore {
 		self.cleanup(window);
 
 		let now = Instant::now();
-		let mut data = self.data.write().unwrap();
+		let mut data = self.data.write().unwrap_or_else(|e| e.into_inner());
 		let entry = data.entry(key.to_string()).or_default();
 		let elapsed = now.duration_since(entry.window_start);
 
-		if elapsed >= window {
+		let remaining_secs = if elapsed >= window {
 			entry.prev_count = entry.count;
 			entry.count = 0;
 			entry.window_start = now;
-		}
+			window.as_secs()
+		} else {
+			window.as_secs().saturating_sub(elapsed.as_secs())
+		};
 
 		entry.count += 1;
 
 		let allowed = entry.count <= max_requests;
-		let remaining = if allowed {
-			max_requests - entry.count
-		} else {
-			0
-		};
-
+		let remaining = if allowed { max_requests - entry.count } else { 0 };
 		let reset_at = SystemTime::now()
 			.duration_since(UNIX_EPOCH)
-			.unwrap()
+			.unwrap_or_default()
 			.as_secs()
-			+ (window.as_secs() - elapsed.as_secs());
+			+ remaining_secs;
 
 		(allowed, remaining, reset_at)
 	}
 
 	fn reset(&self, key: &str) {
-		let mut data = self.data.write().unwrap();
+		let mut data = self.data.write().unwrap_or_else(|e| e.into_inner());
 		data.remove(key);
 	}
 
 	fn get_status(&self, key: &str, max_requests: u64, window: Duration) -> (u64, u64, u64) {
-		let data = self.data.read().unwrap();
+		let data = self.data.read().unwrap_or_else(|e| e.into_inner());
+		let now_unix = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.unwrap_or_default()
+			.as_secs();
 
 		match data.get(key) {
 			Some(entry) => {
@@ -100,27 +110,14 @@ impl MurThrottlerStore for InMemoryStore {
 				let elapsed = now.duration_since(entry.window_start);
 
 				if elapsed >= window {
-					let reset_at = SystemTime::now()
-						.duration_since(UNIX_EPOCH)
-						.unwrap()
-						.as_secs() + window.as_secs();
-					(0, max_requests, reset_at)
+					(0, max_requests, now_unix + window.as_secs())
 				} else {
 					let remaining = max_requests.saturating_sub(entry.count);
-					let reset_at = SystemTime::now()
-						.duration_since(UNIX_EPOCH)
-						.unwrap()
-						.as_secs() + (window.as_secs() - elapsed.as_secs());
+					let reset_at = now_unix + window.as_secs().saturating_sub(elapsed.as_secs());
 					(entry.count, remaining, reset_at)
 				}
 			}
-			None => {
-				let reset_at = SystemTime::now()
-					.duration_since(UNIX_EPOCH)
-					.unwrap()
-					.as_secs() + window.as_secs();
-				(0, max_requests, reset_at)
-			}
+			None => (0, max_requests, now_unix + window.as_secs()),
 		}
 	}
 }

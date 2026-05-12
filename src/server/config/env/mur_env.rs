@@ -1,5 +1,8 @@
 pub struct MurEnv;
 use super::MurEnvProfile;
+use std::sync::OnceLock;
+
+static ENV_LOADED: OnceLock<()> = OnceLock::new();
 
 /// Utilities for reading and loading the application's runtime environment.
 ///
@@ -41,9 +44,12 @@ impl MurEnv {
 	/// Must be called before any other threads are spawned — typically at the
 	/// very top of `main` or inside [`MurServer::new`](crate::MurServer::new).
 	pub unsafe fn load() {
-		for file in Self::env_files() {
-			unsafe { Self::load_file_into_env(&file) };
-		}
+		ENV_LOADED.get_or_init(|| {
+			for file in Self::env_files() {
+				// SAFETY: caller guarantees no other threads are running yet.
+				unsafe { Self::load_file_into_env(&file) };
+			}
+		});
 	}
 
 	unsafe fn load_file_into_env(path: &str) {

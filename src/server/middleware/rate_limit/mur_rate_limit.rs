@@ -197,15 +197,15 @@ impl MurThrottler {
 	) {
 		if self.config.include_headers {
 			let headers = response.headers_mut();
-			headers.insert(
-				"X-RateLimit-Limit",
-				self.config.max_requests.to_string().parse().unwrap(),
-			);
-			headers.insert(
-				"X-RateLimit-Remaining",
-				remaining.to_string().parse().unwrap(),
-			);
-			headers.insert("X-RateLimit-Reset", reset_at.to_string().parse().unwrap());
+			if let Ok(v) = self.config.max_requests.to_string().parse() {
+				headers.insert("X-RateLimit-Limit", v);
+			}
+			if let Ok(v) = remaining.to_string().parse() {
+				headers.insert("X-RateLimit-Remaining", v);
+			}
+			if let Ok(v) = reset_at.to_string().parse() {
+				headers.insert("X-RateLimit-Reset", v);
+			}
 		}
 	}
 }
@@ -261,7 +261,7 @@ impl MurMiddleware for MurThrottler {
 		if !allowed {
 			let now = SystemTime::now()
 				.duration_since(UNIX_EPOCH)
-				.unwrap()
+				.unwrap_or_default()
 				.as_secs();
 			let retry_after = reset_at.saturating_sub(now);
 			let response = self.rate_limit_response(remaining, reset_at, retry_after);
@@ -278,15 +278,15 @@ impl MurMiddleware for MurThrottler {
 			result.map_response(|mut response| {
 				if include_headers {
 					let headers = response.headers_mut();
-					headers.insert(
-						"X-RateLimit-Limit",
-						max_requests.to_string().parse().unwrap(),
-					);
-					headers.insert(
-						"X-RateLimit-Remaining",
-						remaining.to_string().parse().unwrap(),
-					);
-					headers.insert("X-RateLimit-Reset", reset_at.to_string().parse().unwrap());
+					if let Ok(v) = max_requests.to_string().parse() {
+						headers.insert("X-RateLimit-Limit", v);
+					}
+					if let Ok(v) = remaining.to_string().parse() {
+						headers.insert("X-RateLimit-Remaining", v);
+					}
+					if let Ok(v) = reset_at.to_string().parse() {
+						headers.insert("X-RateLimit-Reset", v);
+					}
 				}
 				response
 			})

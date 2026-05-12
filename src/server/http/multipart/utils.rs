@@ -39,15 +39,21 @@ impl MurMultipartUtils {
 	) -> Result<MurMultipart, MurError> {
 		let mut multipart = MurMultipart::empty();
 		let delimiter = format!("--{}", boundary);
-		let _end_delimiter = format!("--{}--", boundary);
-		let body_str = String::from_utf8_lossy(body);
-		let parts: Vec<&str> = body_str.split(&delimiter).collect();
+		let parts = Self::split_on_delimiter(body, delimiter.as_bytes());
 		let mut file_count = 0;
 		let mut field_count = 0;
 
 		for part in parts.iter().skip(1) {
-			let part = part.trim_start_matches("\r\n").trim_end_matches("\r\n");
-			if part.is_empty() || part.starts_with("--") {
+			let part = part
+				.strip_prefix(b"\r\n")
+				.or_else(|| part.strip_prefix(b"\n"))
+				.unwrap_or(part);
+			let part = part
+				.strip_suffix(b"\r\n")
+				.or_else(|| part.strip_suffix(b"\n"))
+				.unwrap_or(part);
+
+			if part.is_empty() || part.starts_with(b"--") {
 				continue;
 			}
 
@@ -59,7 +65,7 @@ impl MurMultipartUtils {
 				)));
 			}
 
-			let field = Self::parse_multipart_part(part, config)?;
+			let field = Self::parse_part_from_bytes(part, config)?;
 
 			match &field {
 				MurFormField::Text { name, value } => {
@@ -118,6 +124,12 @@ impl MurMultipartUtils {
 					}
 
 					multipart.total_file_size += file.size();
+					if multipart.total_file_size > config.max_body_size {
+						return Err(MurError::BadRequest(format!(
+							"Total upload size exceeds maximum of {} bytes",
+							config.max_body_size
+						)));
+					}
 					multipart
 						.file_fields
 						.entry(file.field_name.clone())
@@ -132,17 +144,40 @@ impl MurMultipartUtils {
 		Ok(multipart)
 	}
 
-	pub fn parse_multipart_part(
-		part: &str,
+	fn split_on_delimiter<'a>(data: &'a [u8], delimiter: &[u8]) -> Vec<&'a [u8]> {
+		let mut parts = Vec::new();
+		let mut start = 0;
+		while let Some(pos) = Self::find_in_bytes(&data[start..], delimiter) {
+			parts.push(&data[start..start + pos]);
+			start += pos + delimiter.len();
+		}
+		parts.push(&data[start..]);
+		parts
+	}
+
+	fn find_in_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+		if needle.is_empty() {
+			return Some(0);
+		}
+		haystack.windows(needle.len()).position(|w| w == needle)
+	}
+
+	fn parse_part_from_bytes(
+		part: &[u8],
 		config: &MurMultipartConfig,
 	) -> Result<MurFormField, MurError> {
-		let (headers_str, body) = match part.find("\r\n\r\n") {
-			Some(pos) => (&part[..pos], &part[pos + 4..]),
-			None => match part.find("\n\n") {
-				Some(pos) => (&part[..pos], &part[pos + 2..]),
-				None => return Err(MurError::BadRequest("Invalid multipart part format".into())),
-			},
-		};
+		let (headers_bytes, body_bytes) =
+			if let Some(pos) = Self::find_in_bytes(part, b"\r\n\r\n") {
+				(&part[..pos], &part[pos + 4..])
+			} else if let Some(pos) = Self::find_in_bytes(part, b"\n\n") {
+				(&part[..pos], &part[pos + 2..])
+			} else {
+				return Err(MurError::BadRequest("Invalid multipart part format".into()));
+			};
+
+		let headers_str = std::str::from_utf8(headers_bytes)
+			.map_err(|_| MurError::BadRequest("Non-ASCII characters in part headers".into()))?;
+
 		let mut name = None;
 		let mut filename = None;
 		let mut content_type = String::from("text/plain");
@@ -152,10 +187,8 @@ impl MurMultipartUtils {
 			if line.is_empty() {
 				continue;
 			}
-
 			if let Some(value) = line.strip_prefix("Content-Disposition:") {
 				let value = value.trim();
-
 				if let Some(name_match) = Self::extract_header_param(value, "name") {
 					if name_match.len() > config.max_field_name_length {
 						return Err(MurError::BadRequest(format!(
@@ -165,7 +198,6 @@ impl MurMultipartUtils {
 					}
 					name = Some(name_match);
 				}
-
 				if let Some(filename_match) = Self::extract_header_param(value, "filename") {
 					filename = Some(filename_match);
 				}
@@ -174,22 +206,29 @@ impl MurMultipartUtils {
 			}
 		}
 
-		let name = name.ok_or_else(|| MurError::BadRequest("Missing field name in part".into()))?;
+		let name =
+			name.ok_or_else(|| MurError::BadRequest("Missing field name in part".into()))?;
 
 		if let Some(filename) = filename {
-			let data = Bytes::from(body.as_bytes().to_vec());
 			Ok(MurFormField::File(MurUploadedFile::new(
 				filename,
 				content_type,
-				data,
+				Bytes::copy_from_slice(body_bytes),
 				name,
 			)))
 		} else {
-			Ok(MurFormField::Text {
-				name,
-				value: body.to_string(),
-			})
+			let value = std::str::from_utf8(body_bytes)
+				.map_err(|_| MurError::BadRequest("Text field contains non-UTF-8 data".into()))?
+				.to_string();
+			Ok(MurFormField::Text { name, value })
 		}
+	}
+
+	pub fn parse_multipart_part(
+		part: &str,
+		config: &MurMultipartConfig,
+	) -> Result<MurFormField, MurError> {
+		Self::parse_part_from_bytes(part.as_bytes(), config)
 	}
 
 	pub fn extract_header_param(header: &str, param: &str) -> Option<String> {

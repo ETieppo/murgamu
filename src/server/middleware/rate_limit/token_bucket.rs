@@ -31,7 +31,7 @@ impl Default for TokenBucketStore {
 impl MurThrottlerStore for TokenBucketStore {
 	fn check_and_update(&self, key: &str, max_requests: u64, window: Duration) -> (bool, u64, u64) {
 		let now = Instant::now();
-		let mut data = self.data.write().unwrap();
+		let mut data = self.data.write().unwrap_or_else(|e| e.into_inner());
 		let refill_rate = max_requests as f64 / window.as_secs_f64();
 		let entry = data
 			.entry(key.to_string())
@@ -50,12 +50,15 @@ impl MurThrottlerStore for TokenBucketStore {
 			entry.tokens -= 1.0;
 		}
 
-		let remaining = entry.tokens as u64;
-		let tokens_needed = max_requests as f64 - entry.tokens;
-		let seconds_until_full = (tokens_needed / refill_rate).ceil() as u64;
+		let remaining = entry.tokens.max(0.0) as u64;
+		let seconds_until_full = if refill_rate > 0.0 {
+			((max_requests as f64 - entry.tokens) / refill_rate).ceil() as u64
+		} else {
+			0
+		};
 		let reset_at = SystemTime::now()
 			.duration_since(UNIX_EPOCH)
-			.unwrap()
+			.unwrap_or_default()
 			.as_secs()
 			+ seconds_until_full;
 
@@ -63,13 +66,17 @@ impl MurThrottlerStore for TokenBucketStore {
 	}
 
 	fn reset(&self, key: &str) {
-		let mut data = self.data.write().unwrap();
+		let mut data = self.data.write().unwrap_or_else(|e| e.into_inner());
 		data.remove(key);
 	}
 
 	fn get_status(&self, key: &str, max_requests: u64, window: Duration) -> (u64, u64, u64) {
-		let data = self.data.read().unwrap();
+		let data = self.data.read().unwrap_or_else(|e| e.into_inner());
 		let refill_rate = max_requests as f64 / window.as_secs_f64();
+		let now_unix = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.unwrap_or_default()
+			.as_secs();
 
 		match data.get(key) {
 			Some(entry) => {
@@ -77,24 +84,16 @@ impl MurThrottlerStore for TokenBucketStore {
 				let elapsed = now.duration_since(entry.last_refill);
 				let new_tokens = elapsed.as_secs_f64() * refill_rate;
 				let current_tokens = (entry.tokens + new_tokens).min(max_requests as f64);
-				let used = max_requests as f64 - current_tokens;
-				let remaining = current_tokens as u64;
-				let tokens_needed = max_requests as f64 - current_tokens;
-				let seconds_until_full = (tokens_needed / refill_rate).ceil() as u64;
-				let reset_at = SystemTime::now()
-					.duration_since(UNIX_EPOCH)
-					.unwrap()
-					.as_secs() + seconds_until_full;
-
-				(used as u64, remaining, reset_at)
+				let used = (max_requests as f64 - current_tokens).max(0.0) as u64;
+				let remaining = current_tokens.max(0.0) as u64;
+				let seconds_until_full = if refill_rate > 0.0 {
+					((max_requests as f64 - current_tokens) / refill_rate).ceil() as u64
+				} else {
+					0
+				};
+				(used, remaining, now_unix + seconds_until_full)
 			}
-			None => {
-				let reset_at = SystemTime::now()
-					.duration_since(UNIX_EPOCH)
-					.unwrap()
-					.as_secs();
-				(0, max_requests, reset_at)
-			}
+			None => (0, max_requests, now_unix),
 		}
 	}
 }

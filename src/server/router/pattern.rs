@@ -101,7 +101,11 @@ impl MurRoutePattern {
 				MurPatternSegment::CatchAll(name) => {
 					let rest: Vec<&str> = path_iter.collect();
 					if let Some(param_name) = name {
-						params.insert(param_name.to_string(), rest.join("/"));
+						let joined = rest.join("/");
+						if joined.len() > 4096 {
+							return None;
+						}
+						params.insert(param_name.to_string(), joined);
 					}
 					return Some(params);
 				}

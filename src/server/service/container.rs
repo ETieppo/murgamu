@@ -1,6 +1,7 @@
 use super::MurService;
 use crate::server::provider::MurProvider;
 use crate::server::provider::MurProviderScope;
+use crate::server::error::MurError;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -155,6 +156,16 @@ impl MurServiceContainer {
 			.unwrap_or_else(|| panic!("Required service not found: {}", std::any::type_name::<T>()))
 	}
 
+	/// Resolves the service of type `T`, returning an error if it is not registered.
+	pub fn try_get_required<T: MurService>(&self) -> Result<Arc<T>, MurError> {
+		self.get::<T>().ok_or_else(|| {
+			MurError::Internal(format!(
+				"Required service not found: {}",
+				std::any::type_name::<T>()
+			))
+		})
+	}
+
 	/// Returns `true` if a service of type `T` is registered.
 	#[inline]
 	pub fn has<T: MurService>(&self) -> bool {
@@ -210,6 +221,7 @@ impl MurServiceContainer {
 	#[inline]
 	fn downcast_arc<T: MurService>(&self, service: &Arc<dyn MurService>) -> Option<Arc<T>> {
 		if service.as_any().type_id() != TypeId::of::<T>() {
+			debug_assert!(false, "TypeId mismatch in downcast_arc — framework bug");
 			return None;
 		}
 		let ptr = Arc::as_ptr(service) as *const T;

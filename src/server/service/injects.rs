@@ -1,4 +1,5 @@
 use super::MurInjectable;
+use crate::server::error::MurError;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -44,6 +45,15 @@ impl MurInjects {
 			.unwrap_or_else(|| panic!("Required inject not found: {}", std::any::type_name::<T>()))
 	}
 
+	pub fn try_get_required<T: MurInjectable>(&self) -> Result<Arc<T>, MurError> {
+		self.get::<T>().ok_or_else(|| {
+			MurError::Internal(format!(
+				"Required inject not found: {}",
+				std::any::type_name::<T>()
+			))
+		})
+	}
+
 	#[inline]
 	pub fn has<T: MurInjectable>(&self) -> bool {
 		let type_id = TypeId::of::<T>();
@@ -78,6 +88,7 @@ impl MurInjects {
 		inject: &Arc<dyn MurInjectable + Send + Sync>,
 	) -> Option<Arc<T>> {
 		if inject.as_any().type_id() != TypeId::of::<T>() {
+			debug_assert!(false, "TypeId mismatch in downcast_arc — framework bug");
 			return None;
 		}
 		let ptr = Arc::as_ptr(inject) as *const T;

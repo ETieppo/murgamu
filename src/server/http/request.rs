@@ -128,9 +128,9 @@ impl MurRequestContext {
 
 	pub fn cookie(&self, name: &str) -> Option<&str> {
 		self.header("Cookie").and_then(|cookies| {
-			cookies.split(';').map(|s| s.trim()).find_map(|cookie| {
-				let (key, value) = cookie.split_once('=')?;
-				if key == name { Some(value) } else { None }
+			cookies.split(';').find_map(|cookie| {
+				let (key, value) = cookie.trim().split_once('=')?;
+				if key.trim() == name { Some(value) } else { None }
 			})
 		})
 	}
@@ -142,7 +142,7 @@ impl MurRequestContext {
 					.split(';')
 					.filter_map(|cookie| {
 						let (key, value) = cookie.trim().split_once('=')?;
-						Some((key.to_string(), value.to_string()))
+						Some((key.trim().to_string(), value.to_string()))
 					})
 					.collect()
 			})

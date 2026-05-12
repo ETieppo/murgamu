@@ -89,7 +89,12 @@ impl MurServerRunner {
 		F: Future<Output = ()> + Send + 'static,
 	{
 		for hook in &self.on_startup {
-			hook();
+			if let Err(panic) =
+				std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| hook()))
+			{
+				eprintln!("Startup hook panicked");
+				std::panic::resume_unwind(panic);
+			}
 		}
 
 		let listener = TcpListener::bind(self.config.addr).await?;
@@ -192,12 +197,15 @@ impl MurServerRunner {
 
 	fn run_shutdown_hooks(&self) {
 		for hook in &self.on_shutdown {
-			hook();
+			let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| hook()));
 		}
 		for module in &self.modules {
-			module.on_shutdown();
+			let _ =
+				std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| module.on_shutdown()));
 		}
-		self.injects.on_shutdown();
+		let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+			self.injects.on_shutdown()
+		}));
 	}
 }
 

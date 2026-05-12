@@ -33,23 +33,38 @@ impl MurResponder {
 	}
 
 	pub fn redirect(location: &str) -> MurRes {
-		MurRes::from(
-			Response::builder()
-				.status(StatusCode::FOUND)
-				.header("Location", location)
-				.body(Full::new(Bytes::new()))
-				.unwrap(),
-		)
+		if Self::is_dangerous_scheme(location) {
+			return MurHttpResponse::bad_request().text("Invalid redirect location");
+		}
+		match Response::builder()
+			.status(StatusCode::FOUND)
+			.header("Location", location)
+			.body(Full::new(Bytes::new()))
+		{
+			Ok(resp) => MurRes::from(resp),
+			Err(_) => MurHttpResponse::bad_request().text("Invalid redirect location"),
+		}
 	}
 
 	pub fn redirect_permanent(location: &str) -> MurRes {
-		MurRes::from(
-			Response::builder()
-				.status(StatusCode::MOVED_PERMANENTLY)
-				.header("Location", location)
-				.body(Full::new(Bytes::new()))
-				.unwrap(),
-		)
+		if Self::is_dangerous_scheme(location) {
+			return MurHttpResponse::bad_request().text("Invalid redirect location");
+		}
+		match Response::builder()
+			.status(StatusCode::MOVED_PERMANENTLY)
+			.header("Location", location)
+			.body(Full::new(Bytes::new()))
+		{
+			Ok(resp) => MurRes::from(resp),
+			Err(_) => MurHttpResponse::bad_request().text("Invalid redirect location"),
+		}
+	}
+
+	fn is_dangerous_scheme(location: &str) -> bool {
+		let lower = location.to_ascii_lowercase();
+		lower.starts_with("javascript:")
+			|| lower.starts_with("data:")
+			|| lower.starts_with("vbscript:")
 	}
 
 	pub fn no_content() -> MurRes {
@@ -101,10 +116,9 @@ impl MurResponder {
 			builder = builder.header(name, value);
 		}
 
-		MurRes::from(
-			builder
-				.body(Full::new(Bytes::from(body.to_string())))
-				.unwrap(),
-		)
+		match builder.body(Full::new(Bytes::from(body.to_string()))) {
+			Ok(resp) => MurRes::from(resp),
+			Err(_) => MurHttpResponse::internal_error().text("Failed to build response"),
+		}
 	}
 }
