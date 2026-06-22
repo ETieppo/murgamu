@@ -2,6 +2,7 @@ mod commands;
 mod generators;
 mod templates;
 
+use crate::commands::clean_command;
 use crate::commands::dev_command;
 use crate::commands::execute;
 use crate::commands::new_fmt_command;
@@ -52,6 +53,11 @@ enum Commands {
 		#[arg(value_name = "DIR")]
 		dir: Option<String>,
 	},
+	#[command(about = "Execute cargo clean")]
+	Clean {
+		#[arg(value_name = "DIR")]
+		dir: Option<String>,
+	},
 	#[command(
 		about = "Add .rustfmt.toml inside project",
 		long_about = "Create .rustfmt.toml into project, the file will be created at actual directory if not agrgs was provided, otherwise inside provided dir"
@@ -64,7 +70,7 @@ enum Commands {
 		#[arg(long, action=ArgAction::SetTrue)]
 		unstable: bool,
 		#[arg(long, action=ArgAction::SetTrue)]
-		merge:bool
+		merge: bool,
 	},
 }
 
@@ -100,11 +106,12 @@ fn main() {
 			execute(name, template)
 		}
 		Commands::Dev { dir } => dev_command(dir),
+		Commands::Clean { dir } => clean_command(dir),
 		Commands::NewFmt {
 			dir,
 			unstable,
 			overwrite,
-			merge
+			merge,
 		} => new_fmt_command(dir, unstable, overwrite, merge),
 	};
 
