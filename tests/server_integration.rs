@@ -30,8 +30,8 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use http_body_util::{BodyExt, Full};
-use hyper::body::Bytes;
 use hyper::Request;
+use hyper::body::Bytes;
 use hyper_util::rt::TokioIo;
 use murgamu::{MurServer, MurServerConfig, MurServerRunner, MurThrottler};
 use tokio::net::TcpStream;
@@ -42,6 +42,7 @@ use tokio::net::TcpStream;
 
 mod app {
 	use murgamu::prelude::*;
+	use murgamu::{MurCookie, SameSite};
 	use std::future::Future;
 	use std::pin::Pin;
 
@@ -158,6 +159,54 @@ mod app {
 		#[get("/html")]
 		async fn html_ep(&self) -> MurRes {
 			mur_html!("<h1>hi</h1>")
+		}
+
+		// --- routing edge cases --------------------------------------------
+
+		#[get("/files/*")]
+		async fn wildcard_ep(&self) -> MurRes {
+			mur_json!({ "matched": "wildcard" })
+		}
+
+		#[get("/tree/*rest")]
+		async fn catchall_ep(&self, ctx: MurRequestContext) -> MurRes {
+			mur_json!({ "rest": ctx.path_param("rest").unwrap_or("") })
+		}
+
+		// `/api/profile` (static) must win over `/api/:slug` (dynamic).
+		#[get("/profile")]
+		async fn static_profile(&self) -> MurRes {
+			mur_json!({ "route": "static" })
+		}
+
+		#[get("/:slug")]
+		async fn dynamic_slug(&self, #[param] slug: String) -> MurRes {
+			mur_json!({ "route": "dynamic", "slug": slug })
+		}
+
+		// --- slow / large (timeout + compression) ---------------------------
+
+		#[get("/slow")]
+		async fn slow_ep(&self) -> MurRes {
+			tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+			mur_json!({ "slow": true })
+		}
+
+		#[get("/large")]
+		async fn large_ep(&self) -> MurRes {
+			mur_json!({ "data": "a".repeat(4096) })
+		}
+
+		// --- cookies --------------------------------------------------------
+
+		#[get("/cookie")]
+		async fn set_cookie_ep(&self) -> MurRes {
+			mur_json!({ "ok": true }).with_cookie(
+				MurCookie::new("sid", "secret123")
+					.http_only()
+					.secure()
+					.same_site(SameSite::Strict),
+			)
 		}
 
 		// --- error mapping --------------------------------------------------
@@ -410,12 +459,10 @@ async fn raw_request(
 	let stream = TcpStream::connect(addr).await.expect("connect");
 	let io = TokioIo::new(stream);
 
-	let (mut sender, conn): (
-		hyper::client::conn::http1::SendRequest<Full<Bytes>>,
-		_,
-	) = hyper::client::conn::http1::handshake(io)
-		.await
-		.expect("handshake");
+	let (mut sender, conn): (hyper::client::conn::http1::SendRequest<Full<Bytes>>, _) =
+		hyper::client::conn::http1::handshake(io)
+			.await
+			.expect("handshake");
 
 	tokio::spawn(async move {
 		let _ = conn.await;
@@ -473,8 +520,8 @@ async fn functional_server() -> TestServer {
 	let runner = MurServer::new()
 		.no_logging()
 		.default_public_routes()
-		.add_global_interceptor(app::StampInterceptor)
-		.add_middleware(app::StampMiddleware)
+		.global_interceptor(app::StampInterceptor)
+		.middleware(app::StampMiddleware)
 		.module(app::AppModule::new())
 		.bind(addr)
 		.expect("bind functional server");
@@ -503,10 +550,7 @@ async fn get_returns_json_body() {
 	let res = server.get("/api/hello").await;
 
 	assert_eq!(res.status, 200);
-	assert_eq!(
-		res.header("content-type"),
-		Some("application/json")
-	);
+	assert_eq!(res.header("content-type"), Some("application/json"));
 	assert!(res.json()["message"].as_str().unwrap().contains("Hello"));
 }
 
@@ -613,7 +657,9 @@ async fn head_falls_back_to_get_handler() {
 #[tokio::test]
 async fn options_lists_allowed_methods() {
 	let server = functional_server().await;
-	let res = server.send("OPTIONS", "/api/items/1", &[], Vec::new()).await;
+	let res = server
+		.send("OPTIONS", "/api/items/1", &[], Vec::new())
+		.await;
 
 	assert_eq!(res.status, 204);
 	let allow = res.header("allow").unwrap_or_default();
@@ -624,7 +670,9 @@ async fn options_lists_allowed_methods() {
 #[tokio::test]
 async fn unknown_route_returns_404_json() {
 	let server = functional_server().await;
-	let res = server.get("/api/does-not-exist").await;
+	// Use a prefix with no registered controller so nothing (not even the
+	// `/api/:slug` catch route) matches.
+	let res = server.get("/totally/unknown/path").await;
 
 	assert_eq!(res.status, 404);
 	assert_eq!(res.json()["status"], 404);
@@ -636,18 +684,20 @@ async fn text_and_html_content_types() {
 
 	let text = server.get("/api/text").await;
 	assert_eq!(text.status, 200);
-	assert!(text
-		.header("content-type")
-		.unwrap_or_default()
-		.contains("text/plain"));
+	assert!(
+		text.header("content-type")
+			.unwrap_or_default()
+			.contains("text/plain")
+	);
 	assert_eq!(text.text(), "plain text body");
 
 	let html = server.get("/api/html").await;
 	assert_eq!(html.status, 200);
-	assert!(html
-		.header("content-type")
-		.unwrap_or_default()
-		.contains("text/html"));
+	assert!(
+		html.header("content-type")
+			.unwrap_or_default()
+			.contains("text/html")
+	);
 }
 
 #[tokio::test]
@@ -794,7 +844,11 @@ async fn body_within_limit_is_accepted() {
 	let addr = free_addr();
 	let runner = MurServer::new()
 		.default_public_routes()
-		.configure(MurServerConfig::default().no_logging().body_size_limit(4096))
+		.configure(
+			MurServerConfig::default()
+				.no_logging()
+				.body_size_limit(4096),
+		)
 		.module(app::AppModule::new())
 		.bind(addr)
 		.expect("bind body-limit server");
@@ -812,12 +866,7 @@ async fn rate_limiter_blocks_after_quota() {
 	let runner = MurServer::new()
 		.no_logging()
 		.default_public_routes()
-		.add_middleware(
-			MurThrottler::new()
-				.global()
-				.requests(3)
-				.per_minutes(1),
-		)
+		.middleware(MurThrottler::new().global().requests(3).per_minutes(1))
 		.module(app::AppModule::new())
 		.bind(addr)
 		.expect("bind rate-limit server");
@@ -902,10 +951,11 @@ async fn cors_preflight_returns_no_content_with_headers() {
 		res.header("access-control-allow-origin"),
 		Some("http://allowed.test")
 	);
-	assert!(res
-		.header("access-control-allow-methods")
-		.unwrap_or_default()
-		.contains("GET"));
+	assert!(
+		res.header("access-control-allow-methods")
+			.unwrap_or_default()
+			.contains("GET")
+	);
 }
 
 #[tokio::test]
@@ -920,4 +970,364 @@ async fn internal_errors_do_not_leak_details() {
 		"internal error detail leaked to client: {body}"
 	);
 	assert!(body.contains("Internal Server Error"));
+}
+
+// ===========================================================================
+// Routing edge cases
+// ===========================================================================
+
+#[tokio::test]
+async fn wildcard_matches_exactly_one_segment() {
+	let server = functional_server().await;
+
+	let ok = server.get("/api/files/doc.txt").await;
+	assert_eq!(ok.status, 200);
+	assert_eq!(ok.json()["matched"], "wildcard");
+
+	// `*` consumes a single segment only; a deeper path must not match.
+	let deep = server.get("/api/files/a/b").await;
+	assert_eq!(deep.status, 404);
+}
+
+#[tokio::test]
+async fn catch_all_captures_remaining_path() {
+	let server = functional_server().await;
+	let res = server.get("/api/tree/a/b/c").await;
+
+	assert_eq!(res.status, 200);
+	assert_eq!(res.json()["rest"], "a/b/c");
+}
+
+#[tokio::test]
+async fn static_route_beats_dynamic_param() {
+	let server = functional_server().await;
+
+	let stat = server.get("/api/profile").await;
+	assert_eq!(stat.status, 200);
+	assert_eq!(stat.json()["route"], "static");
+
+	let dynamic = server.get("/api/anything-else").await;
+	assert_eq!(dynamic.status, 200);
+	assert_eq!(dynamic.json()["route"], "dynamic");
+	assert_eq!(dynamic.json()["slug"], "anything-else");
+}
+
+#[tokio::test]
+async fn trailing_slash_is_normalized() {
+	let server = functional_server().await;
+	let res = server.get("/api/hello/").await;
+	assert_eq!(res.status, 200);
+}
+
+#[tokio::test]
+async fn wrong_method_on_existing_path_is_404() {
+	let server = functional_server().await;
+	// `/api/hello` is GET-only; POST has no matching route.
+	let res = server.send("POST", "/api/hello", &[], Vec::new()).await;
+	assert_eq!(res.status, 404);
+}
+
+#[tokio::test]
+async fn empty_body_to_json_route_is_rejected() {
+	let server = functional_server().await;
+	let res = server.send("POST", "/api/echo", &[], Vec::new()).await;
+	assert_eq!(res.status, 400);
+}
+
+#[tokio::test]
+async fn json_content_type_with_charset_still_parses() {
+	let server = functional_server().await;
+	let res = server
+		.send(
+			"POST",
+			"/api/echo",
+			&[("content-type", "application/json; charset=utf-8")],
+			br#"{"name":"x","value":1}"#.to_vec(),
+		)
+		.await;
+	assert_eq!(res.status, 200);
+	assert_eq!(res.json()["name"], "x");
+}
+
+// ===========================================================================
+// Cookies
+// ===========================================================================
+
+#[tokio::test]
+async fn set_cookie_carries_security_attributes() {
+	let server = functional_server().await;
+	let res = server.get("/api/cookie").await;
+
+	assert_eq!(res.status, 200);
+	let cookie = res.header("set-cookie").expect("Set-Cookie present");
+	assert!(cookie.contains("sid=secret123"), "cookie: {cookie}");
+	assert!(cookie.contains("HttpOnly"), "cookie: {cookie}");
+	assert!(cookie.contains("Secure"), "cookie: {cookie}");
+	assert!(cookie.contains("SameSite=Strict"), "cookie: {cookie}");
+}
+
+// ===========================================================================
+// Security headers (opt-in middleware)
+// ===========================================================================
+
+async fn security_headers_server() -> TestServer {
+	use murgamu::server::security::headers::{MurSecurityHeaders, XFrameOptions};
+	let addr = free_addr();
+	let runner = MurServer::new()
+		.no_logging()
+		.default_public_routes()
+		.middleware(
+			MurSecurityHeaders::new()
+				.x_content_type_options(true)
+				.x_frame_options(XFrameOptions::Deny),
+		)
+		.module(app::AppModule::new())
+		.bind(addr)
+		.expect("bind security-headers server");
+	TestServer::start(runner).await
+}
+
+#[tokio::test]
+async fn security_headers_are_applied_when_enabled() {
+	let server = security_headers_server().await;
+	let res = server.get("/api/hello").await;
+
+	assert_eq!(res.status, 200);
+	assert_eq!(res.header("x-content-type-options"), Some("nosniff"));
+	assert_eq!(res.header("x-frame-options"), Some("DENY"));
+}
+
+#[tokio::test]
+async fn security_headers_absent_by_default() {
+	// Documents that the framework does NOT add security headers unless the
+	// MurSecurityHeaders middleware is explicitly installed.
+	let server = functional_server().await;
+	let res = server.get("/api/hello").await;
+	assert!(res.header("x-frame-options").is_none());
+	assert!(res.header("x-content-type-options").is_none());
+}
+
+// ===========================================================================
+// Rate limiting: keying & spoofability
+// ===========================================================================
+
+async fn ip_throttled_server() -> TestServer {
+	let addr = free_addr();
+	let runner = MurServer::new()
+		.no_logging()
+		.default_public_routes()
+		.middleware(MurThrottler::new().by_ip().requests(2).per_minutes(1))
+		.module(app::AppModule::new())
+		.bind(addr)
+		.expect("bind ip-throttled server");
+	TestServer::start(runner).await
+}
+
+#[tokio::test]
+async fn rate_limit_is_per_forwarded_ip() {
+	let server = ip_throttled_server().await;
+	let ip_a = [("x-forwarded-for", "10.0.0.1")];
+
+	assert_eq!(server.get_with("/api/hello", &ip_a).await.status, 200);
+	assert_eq!(server.get_with("/api/hello", &ip_a).await.status, 200);
+	// Third request from the same IP exceeds the quota.
+	assert_eq!(server.get_with("/api/hello", &ip_a).await.status, 429);
+}
+
+#[tokio::test]
+async fn rate_limit_is_bypassable_by_spoofing_forwarded_ip() {
+	// SECURITY NOTE: IP-based throttling trusts `X-Forwarded-For` verbatim, so
+	// a client that rotates the header gets a fresh bucket each time. This test
+	// documents that bypass — deployments must only trust XFF from a known proxy.
+	let server = ip_throttled_server().await;
+
+	for i in 0..6 {
+		let spoofed = format!("10.0.0.{i}");
+		let headers = [("x-forwarded-for", spoofed.as_str())];
+		let res = server.get_with("/api/hello", &headers).await;
+		assert_eq!(
+			res.status, 200,
+			"spoofed IP {spoofed} should get its own bucket"
+		);
+	}
+}
+
+// ===========================================================================
+// Robustness: large/odd inputs must not crash the server
+// ===========================================================================
+
+#[tokio::test]
+async fn very_long_query_string_does_not_crash() {
+	let server = functional_server().await;
+	let long = "a".repeat(8192);
+	let res = server.get(&format!("/api/search?term={long}")).await;
+	assert_eq!(res.status, 200);
+	assert_eq!(res.json()["term"], long);
+}
+
+#[tokio::test]
+async fn deeply_nested_catch_all_path_is_handled() {
+	let server = functional_server().await;
+	let deep = (0..200)
+		.map(|i| i.to_string())
+		.collect::<Vec<_>>()
+		.join("/");
+	let res = server.get(&format!("/api/tree/{deep}")).await;
+	assert_eq!(res.status, 200);
+}
+
+#[tokio::test]
+async fn many_distinct_routes_remain_independently_resolvable() {
+	let server = functional_server().await;
+	// Hit a spread of routes back-to-back; each must resolve to its own handler.
+	assert_eq!(server.get("/api/text").await.text(), "plain text body");
+	assert_eq!(server.get("/api/users/9").await.json()["id"], 9);
+	assert_eq!(server.get("/api/profile").await.json()["route"], "static");
+	assert_eq!(server.get("/api/conflict").await.status, 409);
+}
+
+// ===========================================================================
+// Performance / load (generous ceilings to avoid CI flakiness)
+// ===========================================================================
+
+#[tokio::test]
+async fn perf_handles_concurrent_requests() {
+	let server = functional_server().await;
+	let addr = server.addr;
+
+	let start = std::time::Instant::now();
+	let mut set = tokio::task::JoinSet::new();
+	for _ in 0..200 {
+		set.spawn(async move { raw_request(addr, "GET", "/api/hello", &[], Vec::new()).await });
+	}
+
+	let mut ok = 0;
+	while let Some(res) = set.join_next().await {
+		if res.expect("task panicked").status == 200 {
+			ok += 1;
+		}
+	}
+	let elapsed = start.elapsed();
+
+	assert_eq!(ok, 200, "all concurrent requests should succeed");
+	assert!(
+		elapsed < Duration::from_secs(30),
+		"200 concurrent requests took too long: {elapsed:?}"
+	);
+	eprintln!("perf: 200 concurrent requests in {elapsed:?}");
+}
+
+#[tokio::test]
+async fn perf_sequential_throughput_is_reasonable() {
+	let server = functional_server().await;
+
+	let n = 300;
+	let start = std::time::Instant::now();
+	for _ in 0..n {
+		let res = server.get("/api/hello").await;
+		assert_eq!(res.status, 200);
+	}
+	let elapsed = start.elapsed();
+
+	assert!(
+		elapsed < Duration::from_secs(30),
+		"{n} sequential requests took too long: {elapsed:?}"
+	);
+	let rps = n as f64 / elapsed.as_secs_f64();
+	eprintln!("perf: {n} sequential requests in {elapsed:?} (~{rps:.0} req/s)");
+}
+
+// ===========================================================================
+// Timeout middleware
+// ===========================================================================
+
+async fn timeout_server() -> TestServer {
+	use murgamu::server::middleware::timeout::MurTimeout;
+	let addr = free_addr();
+	let runner = MurServer::new()
+		.no_logging()
+		.default_public_routes()
+		.middleware(MurTimeout::from_millis(80))
+		.module(app::AppModule::new())
+		.bind(addr)
+		.expect("bind timeout server");
+	TestServer::start(runner).await
+}
+
+#[tokio::test]
+async fn slow_handler_times_out() {
+	let server = timeout_server().await;
+	// /api/slow sleeps 400ms, well past the 80ms budget.
+	let res = server.get("/api/slow").await;
+	assert_eq!(res.status, 408);
+}
+
+#[tokio::test]
+async fn fast_handler_under_timeout_succeeds() {
+	let server = timeout_server().await;
+	let res = server.get("/api/hello").await;
+	assert_eq!(res.status, 200);
+}
+
+// ===========================================================================
+// Compression middleware
+// ===========================================================================
+
+async fn compression_server() -> TestServer {
+	use murgamu::server::middleware::compression::MurCompression;
+	let addr = free_addr();
+	let runner = MurServer::new()
+		.no_logging()
+		.default_public_routes()
+		.middleware(MurCompression::gzip_only())
+		.module(app::AppModule::new())
+		.bind(addr)
+		.expect("bind compression server");
+	TestServer::start(runner).await
+}
+
+#[tokio::test]
+async fn large_response_is_gzip_compressed_when_accepted() {
+	let server = compression_server().await;
+	let res = server
+		.get_with("/api/large", &[("accept-encoding", "gzip")])
+		.await;
+
+	assert_eq!(res.status, 200);
+	assert_eq!(res.header("content-encoding"), Some("gzip"));
+	// Highly repetitive ~4KB JSON must shrink dramatically.
+	assert!(
+		res.body.len() < 4096,
+		"compressed body len: {}",
+		res.body.len()
+	);
+
+	// The payload must be a valid gzip stream that restores the original JSON.
+	use std::io::Read;
+	let mut decoder = flate2::read::GzDecoder::new(&res.body[..]);
+	let mut restored = String::new();
+	decoder.read_to_string(&mut restored).expect("valid gzip");
+	let value: serde_json::Value = serde_json::from_str(&restored).expect("valid json");
+	assert_eq!(value["data"].as_str().unwrap().len(), 4096);
+}
+
+#[tokio::test]
+async fn response_not_compressed_without_accept_encoding() {
+	let server = compression_server().await;
+	let res = server.get("/api/large").await;
+
+	assert_eq!(res.status, 200);
+	assert!(res.header("content-encoding").is_none());
+}
+
+#[tokio::test]
+async fn small_response_is_not_compressed() {
+	let server = compression_server().await;
+	// /api/hello is far below the 860-byte min_size threshold.
+	let res = server
+		.get_with("/api/hello", &[("accept-encoding", "gzip")])
+		.await;
+
+	assert_eq!(res.status, 200);
+	assert!(res.header("content-encoding").is_none());
 }

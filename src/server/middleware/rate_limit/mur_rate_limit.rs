@@ -189,7 +189,7 @@ impl MurThrottler {
 		base
 	}
 
-	pub fn add_headers(
+	pub fn headers(
 		&self,
 		response: &mut http::Response<http_body_util::Full<hyper::body::Bytes>>,
 		remaining: u64,

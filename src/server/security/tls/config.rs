@@ -166,21 +166,3 @@ impl MurTlsConfig {
 		Ok(TlsAcceptor::from(Arc::new(config)))
 	}
 }
-
-#[cfg(not(feature = "tls"))]
-impl MurTlsConfig {
-	pub fn from_pem_files(
-		_cert_path: impl AsRef<std::path::Path>,
-		_key_path: impl AsRef<std::path::Path>,
-	) -> Result<Self, MurTlsError> {
-		Err(MurTlsError::General(
-			"TLS feature is not enabled. Add `tls` feature to Cargo.toml".to_string(),
-		))
-	}
-
-	pub fn from_pem(_cert_pem: &str, _key_pem: &str) -> Result<Self, MurTlsError> {
-		Err(MurTlsError::General(
-			"TLS feature is not enabled. Add `tls` feature to Cargo.toml".to_string(),
-		))
-	}
-}

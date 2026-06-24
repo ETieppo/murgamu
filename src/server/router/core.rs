@@ -146,27 +146,27 @@ impl MurRouter {
 		self.route("PATCH", path, handler);
 	}
 
-	pub fn add_guard(&mut self, guard: impl MurGuard + 'static) {
+	pub fn guard(&mut self, guard: impl MurGuard + 'static) {
 		self.global_guards.push(Arc::new(guard));
 	}
 
-	pub fn add_guard_boxed(&mut self, guard: Box<dyn MurGuard + Send + Sync>) {
+	pub fn guard_boxed(&mut self, guard: Box<dyn MurGuard + Send + Sync>) {
 		self.global_guards.push(Arc::from(guard));
 	}
 
-	pub fn add_interceptor(&mut self, interceptor: impl MurInterceptor + 'static) {
+	pub fn interceptor(&mut self, interceptor: impl MurInterceptor + 'static) {
 		self.global_interceptors.push(Arc::new(interceptor));
 	}
 
-	pub fn add_interceptor_boxed(&mut self, interceptor: Box<dyn MurInterceptor + Send + Sync>) {
+	pub fn interceptor_boxed(&mut self, interceptor: Box<dyn MurInterceptor + Send + Sync>) {
 		self.global_interceptors.push(Arc::from(interceptor));
 	}
 
-	pub fn add_middleware(&mut self, middleware: impl MurMiddleware + 'static) {
+	pub fn middleware(&mut self, middleware: impl MurMiddleware + 'static) {
 		self.global_middleware.push(Arc::new(middleware));
 	}
 
-	pub fn add_middleware_boxed(&mut self, middleware: Box<dyn MurMiddleware + Send + Sync>) {
+	pub fn middleware_boxed(&mut self, middleware: Box<dyn MurMiddleware + Send + Sync>) {
 		self.global_middleware.push(Arc::from(middleware));
 	}
 
@@ -174,7 +174,7 @@ impl MurRouter {
 		self.global_middleware.insert(0, Arc::new(middleware));
 	}
 
-	pub fn add_pipe_boxed(&mut self, pipe: Box<dyn MurPipeDyn>) {
+	pub fn pipe_boxed(&mut self, pipe: Box<dyn MurPipeDyn>) {
 		self.pipes.push(Arc::from(pipe));
 	}
 
@@ -207,7 +207,7 @@ impl MurRouter {
 		None
 	}
 
-	pub fn add_exception_filter(&mut self, filter: impl MurExceptionFilter + 'static) {
+	pub fn exception_filter(&mut self, filter: impl MurExceptionFilter + 'static) {
 		self.exception_filters.push(Arc::new(filter));
 	}
 

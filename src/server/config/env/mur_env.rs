@@ -73,8 +73,12 @@ impl MurEnv {
 	}
 
 	fn parse_dotenv_value(value: &str) -> String {
-		if (value.starts_with('"') && value.ends_with('"'))
-			|| (value.starts_with('\'') && value.ends_with('\''))
+		// A quoted value needs at least the two surrounding quotes. Guarding on
+		// `len() >= 2` avoids a panic on a lone quote char (e.g. `KEY="`), where
+		// `value[1..value.len() - 1]` would slice with start > end.
+		if value.len() >= 2
+			&& ((value.starts_with('"') && value.ends_with('"'))
+				|| (value.starts_with('\'') && value.ends_with('\'')))
 		{
 			let inner = &value[1..value.len() - 1];
 			if value.starts_with('"') {
@@ -131,5 +135,49 @@ impl MurEnv {
 	/// Returns the ordered list of `.env` files to load for the active profile.
 	pub fn env_files() -> Vec<String> {
 		Self::current().env_files()
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn parses_plain_value() {
+		assert_eq!(MurEnv::parse_dotenv_value("plain"), "plain");
+	}
+
+	#[test]
+	fn parses_double_quoted_with_escapes() {
+		assert_eq!(MurEnv::parse_dotenv_value(r#""a\nb""#), "a\nb");
+		assert_eq!(MurEnv::parse_dotenv_value(r#""tab\tend""#), "tab\tend");
+	}
+
+	#[test]
+	fn parses_single_quoted_literally() {
+		assert_eq!(MurEnv::parse_dotenv_value(r#"'a\nb'"#), r#"a\nb"#);
+	}
+
+	#[test]
+	fn strips_trailing_inline_comment() {
+		assert_eq!(MurEnv::parse_dotenv_value("value # comment"), "value");
+	}
+
+	#[test]
+	fn empty_value_does_not_panic() {
+		assert_eq!(MurEnv::parse_dotenv_value(""), "");
+	}
+
+	#[test]
+	fn lone_quote_does_not_panic() {
+		// Regression: a single quote char used to slice value[1..0] and panic.
+		assert_eq!(MurEnv::parse_dotenv_value("\""), "\"");
+		assert_eq!(MurEnv::parse_dotenv_value("'"), "'");
+	}
+
+	#[test]
+	fn quote_only_pair_is_empty() {
+		assert_eq!(MurEnv::parse_dotenv_value("\"\""), "");
+		assert_eq!(MurEnv::parse_dotenv_value("''"), "");
 	}
 }

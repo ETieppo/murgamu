@@ -1,8 +1,14 @@
+#[cfg(feature = "tls")]
 use super::acceptor;
+#[cfg(feature = "tls")]
 use super::config;
+#[cfg(feature = "tls")]
 use super::config_builder;
+#[cfg(feature = "tls")]
 use super::error;
+#[cfg(feature = "tls")]
 use super::version;
+#[cfg(feature = "tls")]
 use rcgen::{CertifiedKey, generate_simple_self_signed};
 
 #[cfg(all(feature = "tls", test))]

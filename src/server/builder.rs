@@ -210,20 +210,22 @@ impl MurServer {
 	where
 		T: MurInterceptorFactory + Send + Sync + 'static,
 	{
-		self.interceptor_factories.push(Box::new(|injects, container| {
-			Box::new(T::__create_factory(injects, container)) as Box<dyn MurInterceptor + Send + Sync>
-		}));
+		self.interceptor_factories
+			.push(Box::new(|injects, container| {
+				Box::new(T::__create_factory(injects, container))
+					as Box<dyn MurInterceptor + Send + Sync>
+			}));
 		self
 	}
 
 	/// Registers a pre-built global interceptor without DI.
-	pub fn add_global_interceptor(mut self, interceptor: impl MurInterceptor + 'static) -> Self {
+	pub fn global_interceptor(mut self, interceptor: impl MurInterceptor + 'static) -> Self {
 		self.interceptor_instances.push(Box::new(interceptor));
 		self
 	}
 
 	/// Adds a global middleware layer applied to every request before routing.
-	pub fn add_middleware(mut self, middleware: impl MurMiddleware + 'static) -> Self {
+	pub fn middleware(mut self, middleware: impl MurMiddleware + 'static) -> Self {
 		self.middleware.push(Box::new(middleware));
 		self
 	}
@@ -258,7 +260,8 @@ impl MurServer {
 		global.merge(self.container);
 
 		let mut runtime = global.clone();
-		let mut module_containers: Vec<MurServiceContainer> = Vec::with_capacity(self.modules.len());
+		let mut module_containers: Vec<MurServiceContainer> =
+			Vec::with_capacity(self.modules.len());
 
 		for module in &self.modules {
 			module.on_init();
@@ -287,30 +290,29 @@ impl MurServer {
 		router.default_public = self.default_public;
 
 		for factory in self.guards {
-			router.add_guard_boxed(factory(&self.injects, &container));
+			router.guard_boxed(factory(&self.injects, &container));
 		}
 		for factory in self.pipes {
-			router.add_pipe_boxed(factory(&self.injects, &container));
+			router.pipe_boxed(factory(&self.injects, &container));
 		}
 		for factory in self.interceptor_factories {
-			router.add_interceptor_boxed(factory(&self.injects, &container));
+			router.interceptor_boxed(factory(&self.injects, &container));
 		}
 		for instance in self.interceptor_instances {
-			router.add_interceptor_boxed(instance);
+			router.interceptor_boxed(instance);
 		}
 
 		let has_custom_cors = self.middleware.iter().any(|m| m.name() == "MurCors");
 		for mw in self.middleware {
-			router.add_middleware_boxed(mw);
+			router.middleware_boxed(mw);
 		}
 		if !has_custom_cors {
-			let cors = if self.config.enable_cors
-				&& !self.config.cors_origins.iter().any(|o| o == "*")
-			{
-				MurCors::new().allow_origins(self.config.cors_origins.clone())
-			} else {
-				MurCors::permissive()
-			};
+			let cors =
+				if self.config.enable_cors && !self.config.cors_origins.iter().any(|o| o == "*") {
+					MurCors::new().allow_origins(self.config.cors_origins.clone())
+				} else {
+					MurCors::permissive()
+				};
 			router.prepend_middleware(cors);
 		}
 

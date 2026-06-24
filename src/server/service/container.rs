@@ -130,21 +130,21 @@ impl MurServiceContainer {
 			return self.downcast_arc(service);
 		}
 
-		match self.provider_scopes.get(&resolved_type_id) {
-			Some(MurProviderScope::Transient) => {
-				if let Some(factory) = self.factories.get(&resolved_type_id) {
-					let service = factory();
-					return self.downcast_arc(&service);
-				}
-			}
-			Some(MurProviderScope::Request) => {
-				if let Ok(request_services) = self.request_services.read()
-					&& let Some(service) = request_services.get(&resolved_type_id)
-				{
-					return self.downcast_arc(service);
-				}
-			}
-			_ => {}
+		// Request-scoped services are stored separately via `set_request_service`,
+		// which takes `&self` and therefore cannot record a scope in the
+		// (non-interior-mutable) `provider_scopes` map. Always consult the
+		// request store so such services are actually resolvable.
+		if let Ok(request_services) = self.request_services.read()
+			&& let Some(service) = request_services.get(&resolved_type_id)
+		{
+			return self.downcast_arc(service);
+		}
+
+		if let Some(MurProviderScope::Transient) = self.provider_scopes.get(&resolved_type_id)
+			&& let Some(factory) = self.factories.get(&resolved_type_id)
+		{
+			let service = factory();
+			return self.downcast_arc(&service);
 		}
 
 		None
@@ -332,5 +332,95 @@ mod tests {
 
 		assert_eq!(Arc::as_ptr(&service1), Arc::as_ptr(&service2));
 		assert_eq!(Arc::strong_count(&service1), 3);
+	}
+
+	struct OtherService {
+		tag: &'static str,
+	}
+
+	impl MurService for OtherService {
+		fn as_any(&self) -> &dyn Any {
+			self
+		}
+	}
+
+	#[test]
+	fn unregistered_service_returns_none() {
+		let container = MurServiceContainer::new();
+		assert!(container.get::<TestService>().is_none());
+		assert!(!container.has::<TestService>());
+	}
+
+	#[test]
+	fn transient_factory_creates_new_instances() {
+		let mut container = MurServiceContainer::new();
+		let counter = std::sync::atomic::AtomicI32::new(0);
+		container.register_factory(move || {
+			let v = counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+			TestService { value: v }
+		});
+
+		let a = container.get::<TestService>().unwrap();
+		let b = container.get::<TestService>().unwrap();
+		// Different allocations and increasing values prove fresh construction.
+		assert_ne!(Arc::as_ptr(&a), Arc::as_ptr(&b));
+		assert_ne!(a.value, b.value);
+		assert!(container.has::<TestService>());
+		assert_eq!(container.scope_of::<TestService>(), Some(MurProviderScope::Transient));
+	}
+
+	#[test]
+	fn request_scoped_service_is_resolvable_and_clearable() {
+		// Regression: services stored via `set_request_service` used to be
+		// unreachable from `get` because no scope was recorded.
+		let container = MurServiceContainer::new();
+		container.set_request_service(TestService { value: 7 });
+
+		let resolved = container.get::<TestService>();
+		assert!(resolved.is_some(), "request-scoped service must resolve");
+		assert_eq!(resolved.unwrap().value, 7);
+
+		container.clear_request_services();
+		assert!(container.get::<TestService>().is_none());
+	}
+
+	#[test]
+	fn alias_resolves_to_implementation() {
+		let mut container = MurServiceContainer::new();
+		container.register(OtherService { tag: "impl" });
+		// Alias TestService -> OtherService's type id.
+		container.register_alias::<TestService, OtherService>();
+
+		// Looking up via the alias key resolves to the implementation type.
+		assert!(container.has::<TestService>());
+		let resolved = container.get::<OtherService>().unwrap();
+		assert_eq!(resolved.tag, "impl");
+	}
+
+	#[test]
+	fn merge_combines_services() {
+		let mut a = MurServiceContainer::new();
+		a.register(TestService { value: 1 });
+		let mut b = MurServiceContainer::new();
+		b.register(OtherService { tag: "b" });
+
+		a.merge(b);
+		assert!(a.get::<TestService>().is_some());
+		assert!(a.get::<OtherService>().is_some());
+	}
+
+	#[test]
+	fn child_container_has_isolated_request_store() {
+		let mut parent = MurServiceContainer::new();
+		parent.register(TestService { value: 5 });
+		let child = parent.create_child();
+
+		// Child sees inherited singletons.
+		assert!(child.get::<TestService>().is_some());
+
+		// Request services set on the child do not leak to the parent.
+		child.set_request_service(OtherService { tag: "child-only" });
+		assert!(child.get::<OtherService>().is_some());
+		assert!(parent.get::<OtherService>().is_none());
 	}
 }

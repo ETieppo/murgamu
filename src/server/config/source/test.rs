@@ -74,8 +74,8 @@ fn test_chained_source() {
 	high_priority.set("HIGH_ONLY", "value");
 
 	let chained = MurChainedSource::new()
-		.add_source(low_priority)
-		.add_source(high_priority);
+		.source(low_priority)
+		.source(high_priority);
 
 	let values = chained.load().unwrap();
 	assert_eq!(values.get("KEY"), Some(&"high".to_string()));

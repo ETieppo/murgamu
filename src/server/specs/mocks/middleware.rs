@@ -50,7 +50,7 @@ impl MockMiddleware {
 		self
 	}
 
-	pub fn add_header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
+	pub fn header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
 		let header_name = name.into();
 		let header_value = value.into();
 

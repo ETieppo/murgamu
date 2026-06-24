@@ -14,14 +14,14 @@ impl MurChainedSource {
 		}
 	}
 
-	pub fn add_source<S: MurConfigSource + 'static>(mut self, source: S) -> Self {
+	pub fn source<S: MurConfigSource + 'static>(mut self, source: S) -> Self {
 		self.sources.push(Box::new(source));
 		self
 	}
 
 	pub fn add_if<S: MurConfigSource + 'static>(self, condition: bool, source: S) -> Self {
 		if condition {
-			self.add_source(source)
+			self.source(source)
 		} else {
 			self
 		}
