@@ -27,12 +27,6 @@ pub fn interceptor_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
 		#auto_clone
 		#input
 
-		impl #impl_generics murgamu::MurInterceptor for #struct_name #ty_generics #where_clause {
-			fn name(&self) -> &str {
-				stringify!(#struct_name)
-			}
-		}
-
 		impl #impl_generics murgamu::MurInterceptorFactory for #struct_name #ty_generics #where_clause {
 			fn __create_factory(
 				#injects_param: &murgamu::MurInjects,
