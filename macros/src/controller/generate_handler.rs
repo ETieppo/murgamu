@@ -191,21 +191,21 @@ pub fn generate_handler_code(method_name: &Ident, params: &[ParamInfo]) -> Token
 				call_args.push(quote!(#name));
 				quote! {
 					let #name: #declared_ty = {
-						// Build the pipe with DI from the request container.
-						// MurInjects is empty here because parameter-level pipes rely
-						// on container services, not manually-registered injectables.
 						let __pipe = <#pipe_type as murgamu::MurPipeFactory>::__create_factory(
 							&murgamu::MurInjects::new(),
 							ctx.container.as_ref(),
 						);
-						// Pipes used as parameters always receive the request context
-						// as their input (`#[pipe(MurRequestContext -> T)]`).
-						<#pipe_type as murgamu::MurPipe<murgamu::MurRequestContext>>::apply_transform(
+						match <#pipe_type as murgamu::MurPipe<murgamu::MurRequestContext>>::apply_transform(
 							&__pipe,
 							ctx.clone(),
 							ctx.clone(),
-						)
-						.map_err(|e| murgamu::MurError::from(e))?
+						) {
+							Ok(value) => value,
+							Err(e) => {
+								let e: murgamu::MurError = e.into();
+								return e.into();
+							}
+						}
 					};
 				}
 			}
