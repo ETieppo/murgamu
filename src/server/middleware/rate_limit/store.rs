@@ -82,7 +82,11 @@ impl MurThrottlerStore for InMemoryStore {
 		entry.count += 1;
 
 		let allowed = entry.count <= max_requests;
-		let remaining = if allowed { max_requests - entry.count } else { 0 };
+		let remaining = if allowed {
+			max_requests - entry.count
+		} else {
+			0
+		};
 		let reset_at = SystemTime::now()
 			.duration_since(UNIX_EPOCH)
 			.unwrap_or_default()

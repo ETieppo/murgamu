@@ -98,10 +98,22 @@ fn cookie_renders_all_attributes() {
 #[test]
 fn error_status_and_kind_mapping() {
 	use http::StatusCode;
-	assert_eq!(MurError::not_found("x").status_code(), StatusCode::NOT_FOUND);
-	assert_eq!(MurError::unauthorized("x").status_code(), StatusCode::UNAUTHORIZED);
-	assert_eq!(MurError::forbidden("x").status_code(), StatusCode::FORBIDDEN);
-	assert_eq!(MurError::bad_request("x").status_code(), StatusCode::BAD_REQUEST);
+	assert_eq!(
+		MurError::not_found("x").status_code(),
+		StatusCode::NOT_FOUND
+	);
+	assert_eq!(
+		MurError::unauthorized("x").status_code(),
+		StatusCode::UNAUTHORIZED
+	);
+	assert_eq!(
+		MurError::forbidden("x").status_code(),
+		StatusCode::FORBIDDEN
+	);
+	assert_eq!(
+		MurError::bad_request("x").status_code(),
+		StatusCode::BAD_REQUEST
+	);
 	assert_eq!(MurError::conflict("x").status_code(), StatusCode::CONFLICT);
 	assert_eq!(
 		MurError::too_many_requests("x").status_code(),
@@ -195,7 +207,10 @@ fn fixed_window_reset_restores_quota() {
 	}
 	assert!(!store.check_and_update("k", 3, WINDOW).0);
 	store.reset("k");
-	assert!(store.check_and_update("k", 3, WINDOW).0, "reset should restore quota");
+	assert!(
+		store.check_and_update("k", 3, WINDOW).0,
+		"reset should restore quota"
+	);
 }
 
 #[test]
@@ -204,7 +219,10 @@ fn token_bucket_allows_quota_then_blocks() {
 	for _ in 0..3 {
 		assert!(store.check_and_update("k", 3, WINDOW).0);
 	}
-	assert!(!store.check_and_update("k", 3, WINDOW).0, "bucket should be empty");
+	assert!(
+		!store.check_and_update("k", 3, WINDOW).0,
+		"bucket should be empty"
+	);
 }
 
 #[test]

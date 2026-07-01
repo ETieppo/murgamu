@@ -8,11 +8,11 @@ mod source;
 #[cfg(test)]
 mod test;
 
+pub use base::ConfigMetadata;
 pub use base::MurConfig;
 pub use base::MurConfigBuilder;
 pub use base::MurConfigError;
 pub use base::MurConfigResult;
-pub use base::ConfigMetadata;
 
 pub use env::MurEnv;
 pub use env::MurEnvProfile;

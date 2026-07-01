@@ -1,6 +1,6 @@
 // TODO: create tests
-use super::mur_codec::MurCodec;
 use super::MurFmt;
+use super::mur_codec::MurCodec;
 
 #[test]
 fn test_slugify() {

@@ -166,14 +166,14 @@ impl MurMultipartUtils {
 		part: &[u8],
 		config: &MurMultipartConfig,
 	) -> Result<MurFormField, MurError> {
-		let (headers_bytes, body_bytes) =
-			if let Some(pos) = Self::find_in_bytes(part, b"\r\n\r\n") {
-				(&part[..pos], &part[pos + 4..])
-			} else if let Some(pos) = Self::find_in_bytes(part, b"\n\n") {
-				(&part[..pos], &part[pos + 2..])
-			} else {
-				return Err(MurError::BadRequest("Invalid multipart part format".into()));
-			};
+		let (headers_bytes, body_bytes) = if let Some(pos) = Self::find_in_bytes(part, b"\r\n\r\n")
+		{
+			(&part[..pos], &part[pos + 4..])
+		} else if let Some(pos) = Self::find_in_bytes(part, b"\n\n") {
+			(&part[..pos], &part[pos + 2..])
+		} else {
+			return Err(MurError::BadRequest("Invalid multipart part format".into()));
+		};
 
 		let headers_str = std::str::from_utf8(headers_bytes)
 			.map_err(|_| MurError::BadRequest("Non-ASCII characters in part headers".into()))?;
@@ -206,8 +206,7 @@ impl MurMultipartUtils {
 			}
 		}
 
-		let name =
-			name.ok_or_else(|| MurError::BadRequest("Missing field name in part".into()))?;
+		let name = name.ok_or_else(|| MurError::BadRequest("Missing field name in part".into()))?;
 
 		if let Some(filename) = filename {
 			Ok(MurFormField::File(MurUploadedFile::new(

@@ -242,7 +242,8 @@ fn lz77_encode(data: &[u8], w: &mut BitWriter) {
 			while candidate >= 0 && candidate >= min_pos && chain < MAX_CHAIN {
 				let cand = candidate as usize;
 				// Quick reject: only bother if it can beat the current best.
-				if best_len == 0 || (cand + best_len < n && data[cand + best_len] == data[i + best_len])
+				if best_len == 0
+					|| (cand + best_len < n && data[cand + best_len] == data[i + best_len])
 				{
 					let mut len = 0usize;
 					let max = (n - i).min(MAX_MATCH);

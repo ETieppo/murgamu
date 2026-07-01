@@ -1,8 +1,8 @@
-use super::parse_duration;
-use super::parse_size;
 use super::MurConfigBuilder;
 use super::MurConfigError;
 use super::MurConfigResult;
+use super::parse_duration;
+use super::parse_size;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;

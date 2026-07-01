@@ -69,7 +69,10 @@ impl ProjectGenerator {
 				fs::write(base.join("src/main.rs"), STARTER_MAIN_TEMPLATE)?;
 				fs::write(base.join("src/mods/mod.rs"), STARTER_MODULES_MOD_TEMPLATE)?;
 				fs::write(base.join("src/mods/app/mod.rs"), STARTER_APP_MOD_CONTENT_TEMPLATE)?;
-				fs::write(base.join("src/mods/app/controller.rs"), STARTER_CONTROLLER_TEMPLATE)?;
+				fs::write(
+					base.join("src/mods/app/controller.rs"),
+					STARTER_CONTROLLER_TEMPLATE,
+				)?;
 				fs::write(base.join("src/mods/app/service.rs"), STARTER_SERVICE_TEMPLATE)?;
 			}
 			TemplateTypeEnum::Full => {
@@ -79,13 +82,25 @@ impl ProjectGenerator {
 				fs::write(base.join("src/mods/app/controller.rs"), FULL_CONTROLLER_TEMPLATE)?;
 				fs::write(base.join("src/mods/app/service.rs"), FULL_SERVICE_TEMPLATE)?;
 				fs::write(base.join("src/mods/app/models/mod.rs"), FULL_MODELS_MOD_TEMPLATE)?;
-				fs::write(base.join("src/mods/app/models/user_props.rs"), FULL_USER_PROPS_TEMPLATE)?;
+				fs::write(
+					base.join("src/mods/app/models/user_props.rs"),
+					FULL_USER_PROPS_TEMPLATE,
+				)?;
 				fs::write(base.join("src/mods/auth/mod.rs"), FULL_AUTH_MOD_TEMPLATE)?;
 				fs::write(base.join("src/mods/auth/guard.rs"), FULL_AUTH_GUARD_TEMPLATE)?;
-				fs::write(base.join("src/mods/auth/jwt_extraction_pipe.rs"), FULL_AUTH_PIPE_TEMPLATE)?;
+				fs::write(
+					base.join("src/mods/auth/jwt_extraction_pipe.rs"),
+					FULL_AUTH_PIPE_TEMPLATE,
+				)?;
 				fs::write(base.join("src/mods/token/mod.rs"), FULL_TOKEN_MOD_TEMPLATE)?;
-				fs::write(base.join("src/mods/token/service.rs"), FULL_TOKEN_SERVICE_TEMPLATE)?;
-				fs::write(base.join("src/mods/token/models/mod.rs"), FULL_TOKEN_MODELS_MOD_TEMPLATE)?;
+				fs::write(
+					base.join("src/mods/token/service.rs"),
+					FULL_TOKEN_SERVICE_TEMPLATE,
+				)?;
+				fs::write(
+					base.join("src/mods/token/models/mod.rs"),
+					FULL_TOKEN_MODELS_MOD_TEMPLATE,
+				)?;
 				fs::write(base.join("src/mods/token/models/jwt.rs"), FULL_TOKEN_JWT_TEMPLATE)?;
 				fs::write(base.join("src/mods/users/mod.rs"), FULL_USERS_MOD_TEMPLATE)?;
 				fs::write(base.join("src/mods/users/role.rs"), FULL_USERS_ROLE_TEMPLATE)?;

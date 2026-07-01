@@ -115,12 +115,16 @@ fn test_sse_builder() {
 #[test]
 fn test_sse_headers() {
 	let headers = mur_sse_headers();
-	assert!(headers
-		.iter()
-		.any(|(k, v)| *k == "Content-Type" && *v == "text/event-stream"));
-	assert!(headers
-		.iter()
-		.any(|(k, v)| *k == "Cache-Control" && *v == "no-cache"));
+	assert!(
+		headers
+			.iter()
+			.any(|(k, v)| *k == "Content-Type" && *v == "text/event-stream")
+	);
+	assert!(
+		headers
+			.iter()
+			.any(|(k, v)| *k == "Cache-Control" && *v == "no-cache")
+	);
 }
 
 #[tokio::test]

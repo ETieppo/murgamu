@@ -2,9 +2,7 @@ use crate::core::{gen_constructor_with_fallback, implments_impl_mur_dependencies
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::{
-	FnArg, GenericArgument, ItemImpl, PathArguments, ReturnType, Type, parse_macro_input,
-};
+use syn::{FnArg, GenericArgument, ItemImpl, PathArguments, ReturnType, Type, parse_macro_input};
 
 fn extract_result_ok_type(ty: &Type) -> Option<&Type> {
 	let Type::Path(type_path) = ty else {

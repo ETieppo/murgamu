@@ -26,13 +26,15 @@ fn test_response_builder_text() {
 	assert!(response.is_ok());
 	let response = response.unwrap();
 	assert_eq!(response.status(), StatusCode::OK);
-	assert!(response
-		.headers()
-		.get("Content-Type")
-		.unwrap()
-		.to_str()
-		.unwrap()
-		.contains("text/plain"));
+	assert!(
+		response
+			.headers()
+			.get("Content-Type")
+			.unwrap()
+			.to_str()
+			.unwrap()
+			.contains("text/plain")
+	);
 }
 
 #[test]

@@ -19,8 +19,8 @@ use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
 use http_body_util::{BodyExt, Full};
-use hyper::body::Bytes;
 use hyper::Request;
+use hyper::body::Bytes;
 use hyper_util::rt::TokioIo;
 use murgamu::{MurServer, MurServerRunner};
 use tokio::net::TcpStream;
@@ -131,18 +131,31 @@ impl TestServer {
 		let addr = runner.addr();
 		let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 		tokio::spawn(async move {
-			let _ = runner.run_until(async move { let _ = rx.await; }).await;
+			let _ = runner
+				.run_until(async move {
+					let _ = rx.await;
+				})
+				.await;
 		});
 		for _ in 0..200 {
 			if TcpStream::connect(addr).await.is_ok() {
-				return Self { addr, shutdown: Some(tx) };
+				return Self {
+					addr,
+					shutdown: Some(tx),
+				};
 			}
 			tokio::time::sleep(Duration::from_millis(10)).await;
 		}
 		panic!("server did not become ready on {addr}");
 	}
 
-	async fn send(&self, method: &str, path: &str, headers: &[(&str, &str)], body: Vec<u8>) -> TestResponse {
+	async fn send(
+		&self,
+		method: &str,
+		path: &str,
+		headers: &[(&str, &str)],
+		body: Vec<u8>,
+	) -> TestResponse {
 		raw_request(self.addr, method, path, headers, body).await
 	}
 
@@ -155,7 +168,8 @@ impl TestServer {
 	}
 
 	async fn post(&self, path: &str, body: Vec<u8>, content_type: &str) -> TestResponse {
-		self.send("POST", path, &[("content-type", content_type)], body).await
+		self.send("POST", path, &[("content-type", content_type)], body)
+			.await
 	}
 }
 
@@ -201,24 +215,46 @@ async fn raw_request(
 	let stream = TcpStream::connect(addr).await.expect("connect");
 	let io = TokioIo::new(stream);
 	let (mut sender, conn): (hyper::client::conn::http1::SendRequest<Full<Bytes>>, _) =
-		hyper::client::conn::http1::handshake(io).await.expect("handshake");
-	tokio::spawn(async move { let _ = conn.await; });
+		hyper::client::conn::http1::handshake(io)
+			.await
+			.expect("handshake");
+	tokio::spawn(async move {
+		let _ = conn.await;
+	});
 
-	let mut builder = Request::builder().method(method).uri(path).header("Host", addr.to_string());
+	let mut builder = Request::builder()
+		.method(method)
+		.uri(path)
+		.header("Host", addr.to_string());
 	for (k, v) in headers {
 		builder = builder.header(*k, *v);
 	}
-	let req = builder.body(Full::new(Bytes::from(body))).expect("build request");
+	let req = builder
+		.body(Full::new(Bytes::from(body)))
+		.expect("build request");
 
 	let res = sender.send_request(req).await.expect("send request");
 	let status = res.status().as_u16();
 	let mut hmap = HashMap::new();
 	for (k, v) in res.headers() {
-		hmap.insert(k.as_str().to_lowercase(), v.to_str().unwrap_or("").to_string());
+		hmap.insert(
+			k.as_str().to_lowercase(),
+			v.to_str().unwrap_or("").to_string(),
+		);
 	}
-	let body = res.into_body().collect().await.expect("collect body").to_bytes().to_vec();
+	let body = res
+		.into_body()
+		.collect()
+		.await
+		.expect("collect body")
+		.to_bytes()
+		.to_vec();
 
-	TestResponse { status, headers: hmap, body }
+	TestResponse {
+		status,
+		headers: hmap,
+		body,
+	}
 }
 
 /// Sends `count` sequential GET requests over the **same** HTTP/1.1 connection.
@@ -227,8 +263,12 @@ async fn keepalive_requests(addr: SocketAddr, paths: &[&str]) -> Vec<(u16, usize
 	let stream = TcpStream::connect(addr).await.expect("connect");
 	let io = TokioIo::new(stream);
 	let (mut sender, conn): (hyper::client::conn::http1::SendRequest<Full<Bytes>>, _) =
-		hyper::client::conn::http1::handshake(io).await.expect("handshake");
-	tokio::spawn(async move { let _ = conn.await; });
+		hyper::client::conn::http1::handshake(io)
+			.await
+			.expect("handshake");
+	tokio::spawn(async move {
+		let _ = conn.await;
+	});
 
 	let mut results = Vec::new();
 	for path in paths {
@@ -293,7 +333,11 @@ async fn head_content_length_matches_get_body_size() {
 
 	// The GET body must match the Content-Length header reported by HEAD.
 	if let Some(cl) = head.content_length() {
-		assert_eq!(cl, get.body.len(), "HEAD Content-Length must match GET body size");
+		assert_eq!(
+			cl,
+			get.body.len(),
+			"HEAD Content-Length must match GET body size"
+		);
 	}
 }
 
@@ -314,7 +358,10 @@ async fn redirect_has_location_header() {
 	let res = server.get("/redirect").await;
 
 	assert_eq!(res.status, 301);
-	assert!(res.header("location").is_some(), "301 must carry Location header");
+	assert!(
+		res.header("location").is_some(),
+		"301 must carry Location header"
+	);
 }
 
 /// The framework must emit `Content-Type: application/json` for JSON responses.
@@ -365,7 +412,10 @@ async fn keepalive_reuses_connection_for_sequential_requests() {
 	assert_eq!(results.len(), paths.len());
 	for (i, (status, body_len)) in results.iter().enumerate() {
 		assert_eq!(*status, 200, "request {i} failed on keep-alive connection");
-		assert!(*body_len > 0, "request {i} returned empty body on keep-alive connection");
+		assert!(
+			*body_len > 0,
+			"request {i} returned empty body on keep-alive connection"
+		);
 	}
 }
 
@@ -398,7 +448,11 @@ async fn very_long_url_does_not_crash_server() {
 	let res = server.get(&long_path).await;
 
 	// The response code is not strictly defined, but must be a valid HTTP status.
-	assert!(res.status >= 200 && res.status < 600, "invalid status for long URL: {}", res.status);
+	assert!(
+		res.status >= 200 && res.status < 600,
+		"invalid status for long URL: {}",
+		res.status
+	);
 }
 
 /// A single header whose value is 32 KiB must not crash the server.
@@ -408,9 +462,14 @@ async fn oversized_header_value_does_not_crash_server() {
 	let server = default_server().await;
 	let big_value = "x".repeat(32 * 1024);
 	// hyper will either forward it or reject at the transport layer — both are fine.
-	let res = server.get_with("/ping", &[("x-large", big_value.as_str())]).await;
+	let res = server
+		.get_with("/ping", &[("x-large", big_value.as_str())])
+		.await;
 
-	assert!(res.status >= 200 && res.status < 600, "invalid status for large header");
+	assert!(
+		res.status >= 200 && res.status < 600,
+		"invalid status for large header"
+	);
 }
 
 /// Path-traversal segments (`../`) must not cause the server to panic or leak
@@ -450,7 +509,10 @@ async fn unknown_http_method_does_not_crash_server() {
 #[tokio::test]
 async fn many_query_params_do_not_crash() {
 	let server = default_server().await;
-	let qs: String = (0..300).map(|i| format!("k{i}=v{i}")).collect::<Vec<_>>().join("&");
+	let qs: String = (0..300)
+		.map(|i| format!("k{i}=v{i}"))
+		.collect::<Vec<_>>()
+		.join("&");
 	let path = format!("/count-query?{qs}");
 	let res = server.get(&path).await;
 
@@ -486,7 +548,9 @@ async fn post_with_empty_body_content_length_zero_accepted() {
 #[tokio::test]
 async fn custom_response_header_survives_round_trip() {
 	let server = default_server().await;
-	let res = server.get_with("/echo-header", &[("x-echo", "hello-world-123")]).await;
+	let res = server
+		.get_with("/echo-header", &[("x-echo", "hello-world-123")])
+		.await;
 
 	assert_eq!(res.status, 200);
 	assert_eq!(res.json()["echo"], "hello-world-123");
@@ -521,18 +585,17 @@ async fn three_servers_handle_concurrent_load_in_isolation() {
 	let s2 = default_server().await;
 	let s3 = default_server().await;
 
-	let (r1, r2, r3) = tokio::join!(
-		s1.get("/ping"),
-		s2.get("/text"),
-		s3.get("/html"),
-	);
+	let (r1, r2, r3) = tokio::join!(s1.get("/ping"), s2.get("/text"), s3.get("/html"),);
 
 	assert_eq!(r1.status, 200);
 	assert_eq!(r2.status, 200);
 	assert_eq!(r3.status, 200);
 
 	// Each must have gotten the right route.
-	assert!(r1.json()["ok"].as_bool().unwrap_or(false), "server1 /ping response wrong");
+	assert!(
+		r1.json()["ok"].as_bool().unwrap_or(false),
+		"server1 /ping response wrong"
+	);
 	assert_eq!(r2.text(), "hello", "server2 /text response wrong");
 	assert!(r3.text().contains("hi"), "server3 /html response wrong");
 }
@@ -594,7 +657,10 @@ async fn concurrent_mixed_method_requests_route_correctly() {
 			ok += 1;
 		}
 	}
-	assert_eq!(ok, 100, "all mixed-method concurrent requests should return 200");
+	assert_eq!(
+		ok, 100,
+		"all mixed-method concurrent requests should return 200"
+	);
 }
 
 /// 100 concurrent POST requests each carrying a 4 KiB body must all be
@@ -663,10 +729,16 @@ async fn post_echo_preserves_body_exactly() {
 		.take(2048)
 		.map(|b| b as char)
 		.collect();
-	let res = server.post("/echo-body", payload.as_bytes().to_vec(), "text/plain").await;
+	let res = server
+		.post("/echo-body", payload.as_bytes().to_vec(), "text/plain")
+		.await;
 
 	assert_eq!(res.status, 200);
-	assert_eq!(res.body, payload.as_bytes(), "echo-body must return the exact bytes sent");
+	assert_eq!(
+		res.body,
+		payload.as_bytes(),
+		"echo-body must return the exact bytes sent"
+	);
 }
 
 // ===========================================================================
@@ -725,7 +797,11 @@ async fn not_found_response_includes_json_status_field() {
 async fn error_responses_have_json_content_type() {
 	let server = default_server().await;
 
-	for path in &["/this-does-not-exist", "/error/not-found", "/error/bad-request"] {
+	for path in &[
+		"/this-does-not-exist",
+		"/error/not-found",
+		"/error/bad-request",
+	] {
 		let res = server.get(path).await;
 		let ct = res.header("content-type").unwrap_or_default();
 		assert!(
@@ -762,7 +838,10 @@ async fn sequential_throughput_is_stable_over_1000_requests() {
 	}
 
 	let elapsed = start.elapsed();
-	assert!(elapsed < Duration::from_secs(30), "1000 requests took too long: {elapsed:?}");
+	assert!(
+		elapsed < Duration::from_secs(30),
+		"1000 requests took too long: {elapsed:?}"
+	);
 
 	// The last batch must not be more than 4× slower than the fastest batch.
 	let min_batch = batch_times.iter().min().copied().unwrap_or_default();
@@ -799,6 +878,9 @@ async fn burst_throughput_500_concurrent_requests() {
 	let elapsed = start.elapsed();
 
 	assert_eq!(ok, 500, "all 500 concurrent requests should return 200");
-	assert!(elapsed < Duration::from_secs(30), "500 concurrent requests took too long: {elapsed:?}");
+	assert!(
+		elapsed < Duration::from_secs(30),
+		"500 concurrent requests took too long: {elapsed:?}"
+	);
 	eprintln!("stability: 500 concurrent requests in {elapsed:?}");
 }

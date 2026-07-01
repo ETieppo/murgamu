@@ -20,11 +20,7 @@ impl MurChainedSource {
 	}
 
 	pub fn add_if<S: MurConfigSource + 'static>(self, condition: bool, source: S) -> Self {
-		if condition {
-			self.source(source)
-		} else {
-			self
-		}
+		if condition { self.source(source) } else { self }
 	}
 
 	pub fn len(&self) -> usize {

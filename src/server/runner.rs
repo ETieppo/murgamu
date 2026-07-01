@@ -14,8 +14,8 @@ use hyper::service::{Service, service_fn};
 use hyper_util::rt::TokioIo;
 use std::future::Future;
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::watch;
@@ -89,16 +89,18 @@ impl MurServerRunner {
 		F: Future<Output = ()> + Send + 'static,
 	{
 		for hook in &self.on_startup {
-			if let Err(panic) =
-				std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| hook()))
-			{
+			if let Err(panic) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| hook())) {
 				eprintln!("Startup hook panicked");
 				std::panic::resume_unwind(panic);
 			}
 		}
 
 		let listener = TcpListener::bind(self.config.addr).await?;
-		let protocol = if self.tls_acceptor.is_some() { "https" } else { "http" };
+		let protocol = if self.tls_acceptor.is_some() {
+			"https"
+		} else {
+			"http"
+		};
 
 		println!(
 			"{} server listening on {}://{}",
@@ -106,12 +108,15 @@ impl MurServerRunner {
 		);
 
 		let shutdown_mode = if self.config.graceful_shutdown {
-			ShutdownMode::Graceful { timeout: self.config.shutdown_timeout }
+			ShutdownMode::Graceful {
+				timeout: self.config.shutdown_timeout,
+			}
 		} else {
 			ShutdownMode::Forever
 		};
 
-		self.accept_loop(listener, shutdown_signal, shutdown_mode).await
+		self.accept_loop(listener, shutdown_signal, shutdown_mode)
+			.await
 	}
 
 	/// Loop central de accept — lida com plain TCP e TLS de forma unificada.
@@ -200,12 +205,10 @@ impl MurServerRunner {
 			let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| hook()));
 		}
 		for module in &self.modules {
-			let _ =
-				std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| module.on_shutdown()));
+			let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| module.on_shutdown()));
 		}
-		let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-			self.injects.on_shutdown()
-		}));
+		let _ =
+			std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.injects.on_shutdown()));
 	}
 }
 

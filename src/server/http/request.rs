@@ -130,7 +130,11 @@ impl MurRequestContext {
 		self.header("Cookie").and_then(|cookies| {
 			cookies.split(';').find_map(|cookie| {
 				let (key, value) = cookie.trim().split_once('=')?;
-				if key.trim() == name { Some(value) } else { None }
+				if key.trim() == name {
+					Some(value)
+				} else {
+					None
+				}
 			})
 		})
 	}

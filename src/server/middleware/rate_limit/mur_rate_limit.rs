@@ -178,10 +178,18 @@ impl MurThrottler {
 			let max = self.config.max_requests;
 			return base.map_response(move |mut resp| {
 				let headers = resp.headers_mut();
-				if let Ok(v) = max.to_string().parse() { headers.insert("X-RateLimit-Limit", v); }
-				if let Ok(v) = "0".parse() { headers.insert("X-RateLimit-Remaining", v); }
-				if let Ok(v) = reset_at.to_string().parse() { headers.insert("X-RateLimit-Reset", v); }
-				if let Ok(v) = retry_after.to_string().parse() { headers.insert("Retry-After", v); }
+				if let Ok(v) = max.to_string().parse() {
+					headers.insert("X-RateLimit-Limit", v);
+				}
+				if let Ok(v) = "0".parse() {
+					headers.insert("X-RateLimit-Remaining", v);
+				}
+				if let Ok(v) = reset_at.to_string().parse() {
+					headers.insert("X-RateLimit-Reset", v);
+				}
+				if let Ok(v) = retry_after.to_string().parse() {
+					headers.insert("Retry-After", v);
+				}
 				resp
 			});
 		}

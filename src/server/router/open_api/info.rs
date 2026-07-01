@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::{contact::MurApiContact, license::MurApiLicense};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MurApiInfo {

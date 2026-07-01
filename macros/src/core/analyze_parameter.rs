@@ -88,8 +88,7 @@ pub fn analyze_parameter(pat_type: &PatType) -> ParamInfo {
 	} else if ty_str.starts_with("Param<") || ty_str.starts_with("murgamu::Param<") {
 		let inner = extract_generic_type(&ty_str, "Param");
 		ParamKind::Param(inner.parse().unwrap_or(quote!(String)))
-	}
-	else if ty_str.contains("MurHeader") {
+	} else if ty_str.contains("MurHeader") {
 		ParamKind::Header
 	} else if ty_str.contains("MurBody") {
 		ParamKind::Body

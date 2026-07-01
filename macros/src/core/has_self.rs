@@ -1,4 +1,4 @@
-use syn::{punctuated::Punctuated, token::Comma, FnArg};
+use syn::{FnArg, punctuated::Punctuated, token::Comma};
 
 pub fn has_self(method_inputs: &Punctuated<FnArg, Comma>) -> bool {
 	method_inputs

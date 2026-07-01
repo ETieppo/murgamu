@@ -16,11 +16,7 @@ pub fn execute(
 	if template_type.is_none() {
 		template_type = Some(
 			select("Which template would you like to use?")
-				.item(
-					TemplateTypeEnum::Starter,
-					"Starter",
-					"Simple modular structure",
-				)
+				.item(TemplateTypeEnum::Starter, "Starter", "Simple modular structure")
 				.item(
 					TemplateTypeEnum::Basic,
 					"Basic",

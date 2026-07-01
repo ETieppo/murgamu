@@ -142,7 +142,10 @@ fn test_rate_limit_algorithms() {
 	assert_eq!(limiter.config.algorithm, MurThrottlerAlgorithm::FixedWindow);
 
 	let limiter = MurThrottler::new().sliding_window();
-	assert_eq!(limiter.config.algorithm, MurThrottlerAlgorithm::SlidingWindow);
+	assert_eq!(
+		limiter.config.algorithm,
+		MurThrottlerAlgorithm::SlidingWindow
+	);
 
 	let limiter = MurThrottler::new().token_bucket();
 	assert_eq!(limiter.config.algorithm, MurThrottlerAlgorithm::TokenBucket);

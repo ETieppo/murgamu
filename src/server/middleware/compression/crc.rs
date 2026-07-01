@@ -1,7 +1,7 @@
 pub struct MurCrc;
 
 impl MurCrc {
-  pub fn crc32(data: &[u8]) -> u32 {
+	pub fn crc32(data: &[u8]) -> u32 {
 		const CRC32_TABLE: [u32; 256] = MurCrc::generate_crc32_table();
 
 		let mut crc: u32 = 0xffffffff;

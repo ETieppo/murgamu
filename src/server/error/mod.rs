@@ -1,5 +1,5 @@
-pub mod contract;
 pub mod builder;
+pub mod contract;
 
-pub use contract::MurExceptionFilter;
 pub use builder::MurError;
+pub use contract::MurExceptionFilter;

@@ -1,6 +1,4 @@
-use super::{
-	mur_open_api::MurOpenApi, operation::MurApiOperation, schema::MurApiSchema,
-};
+use super::{mur_open_api::MurOpenApi, operation::MurApiOperation, schema::MurApiSchema};
 
 #[test]
 fn test_schema_string() {

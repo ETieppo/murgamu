@@ -9,9 +9,9 @@ use crate::server::http::MurRequestContext;
 use crate::server::middleware::{MurMiddleware, MurNext};
 use http_body_util::BodyExt;
 use http_body_util::Full;
-use hyper::body::Bytes;
-use hyper::header::{HeaderValue, ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_LENGTH, CONTENT_TYPE};
 use hyper::Response;
+use hyper::body::Bytes;
+use hyper::header::{ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_LENGTH, CONTENT_TYPE, HeaderValue};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -234,7 +234,7 @@ impl MurMiddleware for MurCompression {
 						Err(_) => {
 							return MurRes::from(MurError::Internal(
 								"Failed to read response body".into(),
-							))
+							));
 						}
 					};
 

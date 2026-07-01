@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use super::AllowedOrigins;
+use std::collections::HashSet;
 
 #[test]
 fn test_allowed_origins_any() {

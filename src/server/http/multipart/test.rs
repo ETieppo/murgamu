@@ -26,22 +26,46 @@ fn test_parse_boundary_wrong_content_type() {
 
 #[test]
 fn test_sanitize_filename() {
-	assert_eq!(MurMultipartUtils::sanitize_filename("hello.txt"), "hello.txt");
-	assert_eq!(MurMultipartUtils::sanitize_filename("hello world.txt"), "hello world.txt");
-	assert_eq!(MurMultipartUtils::sanitize_filename("../../../etc/passwd"), "etcpasswd");
-	assert_eq!(MurMultipartUtils::sanitize_filename("file<>:\"|?*.txt"), "file.txt");
+	assert_eq!(
+		MurMultipartUtils::sanitize_filename("hello.txt"),
+		"hello.txt"
+	);
+	assert_eq!(
+		MurMultipartUtils::sanitize_filename("hello world.txt"),
+		"hello world.txt"
+	);
+	assert_eq!(
+		MurMultipartUtils::sanitize_filename("../../../etc/passwd"),
+		"etcpasswd"
+	);
+	assert_eq!(
+		MurMultipartUtils::sanitize_filename("file<>:\"|?*.txt"),
+		"file.txt"
+	);
 	assert_eq!(MurMultipartUtils::sanitize_filename(""), "unnamed_file");
 	assert_eq!(MurMultipartUtils::sanitize_filename("..."), "unnamed_file");
 }
 
 #[test]
 fn test_extract_extension() {
-	assert_eq!(MurMultipartUtils::extract_extension("file.txt"), Some("txt".to_string()));
-	assert_eq!(MurMultipartUtils::extract_extension("file.TXT"), Some("txt".to_string()));
-	assert_eq!(MurMultipartUtils::extract_extension("file.tar.gz"), Some("gz".to_string()));
+	assert_eq!(
+		MurMultipartUtils::extract_extension("file.txt"),
+		Some("txt".to_string())
+	);
+	assert_eq!(
+		MurMultipartUtils::extract_extension("file.TXT"),
+		Some("txt".to_string())
+	);
+	assert_eq!(
+		MurMultipartUtils::extract_extension("file.tar.gz"),
+		Some("gz".to_string())
+	);
 	assert_eq!(MurMultipartUtils::extract_extension("file"), None);
 	assert_eq!(MurMultipartUtils::extract_extension(".hidden"), None);
-	assert_eq!(MurMultipartUtils::extract_extension(".hidden.txt"), Some("txt".to_string()));
+	assert_eq!(
+		MurMultipartUtils::extract_extension(".hidden.txt"),
+		Some("txt".to_string())
+	);
 }
 
 #[test]
@@ -104,9 +128,11 @@ fn test_multipart_config_presets() {
 
 	let images = MurMultipartConfig::images_only();
 	assert!(images.allowed_extensions.contains(&"jpg".to_string()));
-	assert!(images
-		.allowed_mime_types
-		.contains(&"image/jpeg".to_string()));
+	assert!(
+		images
+			.allowed_mime_types
+			.contains(&"image/jpeg".to_string())
+	);
 }
 
 #[test]
@@ -155,7 +181,10 @@ fn test_extract_header_param() {
 		MurMultipartUtils::extract_header_param(header, "filename"),
 		Some("test.txt".to_string())
 	);
-	assert_eq!(MurMultipartUtils::extract_header_param(header, "missing"), None);
+	assert_eq!(
+		MurMultipartUtils::extract_header_param(header, "missing"),
+		None
+	);
 }
 
 #[test]
@@ -166,8 +195,12 @@ fn test_is_multipart_content_type() {
 	assert!(MurMultipartUtils::mur_is_multipart_content_type(
 		"MULTIPART/FORM-DATA; boundary=abc"
 	));
-	assert!(!MurMultipartUtils::mur_is_multipart_content_type("application/json"));
-	assert!(!MurMultipartUtils::mur_is_multipart_content_type("text/plain"));
+	assert!(!MurMultipartUtils::mur_is_multipart_content_type(
+		"application/json"
+	));
+	assert!(!MurMultipartUtils::mur_is_multipart_content_type(
+		"text/plain"
+	));
 }
 
 #[test]

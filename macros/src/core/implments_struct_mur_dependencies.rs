@@ -16,8 +16,7 @@ pub fn implments_struct_mur_dependencies(
 	let is_tuple_struct = matches!(&input.fields, Fields::Unnamed(_));
 
 	let injects_spec: Vec<InjectSpec> = infer_injects_from_fields(input);
-	let has_skipped_fields =
-		!is_tuple_struct && input.fields.iter().any(is_skipped_field);
+	let has_skipped_fields = !is_tuple_struct && input.fields.iter().any(is_skipped_field);
 	let any_from_injects = injects_spec.iter().any(|s| !s.via_container);
 	let injects_param = if any_from_injects {
 		format_ident!("injects")

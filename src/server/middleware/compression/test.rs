@@ -119,14 +119,21 @@ fn gzip_round_trips_various_inputs() {
 		"a".repeat(5000).into_bytes(),
 		b"abcabcabcabcabcabcabcabc".to_vec(),
 		(0..=255u8).cycle().take(4096).collect(),
-		br#"{"data":"the quick brown fox jumps over the lazy dog"}"#.repeat(50).to_vec(),
+		br#"{"data":"the quick brown fox jumps over the lazy dog"}"#
+			.repeat(50)
+			.to_vec(),
 	];
 
 	let encoder = MurGzipEncoder::new(6);
 	for sample in samples {
 		let compressed = encoder.compress(&sample).expect("compresses");
 		let restored = gunzip(&compressed);
-		assert_eq!(restored, sample, "gzip round trip failed (len {})", sample.len());
+		assert_eq!(
+			restored,
+			sample,
+			"gzip round trip failed (len {})",
+			sample.len()
+		);
 	}
 }
 
@@ -152,7 +159,9 @@ fn gzip_actually_shrinks_repetitive_data() {
 
 #[test]
 fn gzip_handles_binary_data() {
-	let data: Vec<u8> = (0..10_000u32).map(|i| (i.wrapping_mul(2654435761) >> 24) as u8).collect();
+	let data: Vec<u8> = (0..10_000u32)
+		.map(|i| (i.wrapping_mul(2654435761) >> 24) as u8)
+		.collect();
 	let compressed = MurGzipEncoder::new(6).compress(&data).expect("compresses");
 	assert_eq!(gunzip(&compressed), data);
 }

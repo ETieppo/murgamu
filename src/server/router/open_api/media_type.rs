@@ -1,6 +1,6 @@
+use super::{example::MurApiExample, schema::MurApiSchema};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use super::{example::MurApiExample, schema::MurApiSchema};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MurApiMediaType {

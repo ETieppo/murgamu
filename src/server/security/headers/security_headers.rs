@@ -148,16 +148,24 @@ impl MurSecurityHeaders {
 		let headers = response.headers_mut();
 
 		if let Some(ref csp) = self.config.content_security_policy {
-			if let Ok(v) = csp.parse() { headers.insert("Content-Security-Policy", v); }
+			if let Ok(v) = csp.parse() {
+				headers.insert("Content-Security-Policy", v);
+			}
 		}
 		if let Some(ref xfo) = self.config.x_frame_options {
-			if let Ok(v) = xfo.as_str().parse() { headers.insert("X-Frame-Options", v); }
+			if let Ok(v) = xfo.as_str().parse() {
+				headers.insert("X-Frame-Options", v);
+			}
 		}
 		if self.config.x_content_type_options {
-			if let Ok(v) = "nosniff".parse() { headers.insert("X-Content-Type-Options", v); }
+			if let Ok(v) = "nosniff".parse() {
+				headers.insert("X-Content-Type-Options", v);
+			}
 		}
 		if let Some(ref xss) = self.config.x_xss_protection {
-			if let Ok(v) = xss.as_str().parse() { headers.insert("X-XSS-Protection", v); }
+			if let Ok(v) = xss.as_str().parse() {
+				headers.insert("X-XSS-Protection", v);
+			}
 		}
 		if let Some(ref hsts) = self.config.hsts {
 			if let Ok(v) = hsts.to_header_value().parse() {
@@ -165,14 +173,20 @@ impl MurSecurityHeaders {
 			}
 		}
 		if let Some(ref rp) = self.config.referrer_policy {
-			if let Ok(v) = rp.as_str().parse() { headers.insert("Referrer-Policy", v); }
+			if let Ok(v) = rp.as_str().parse() {
+				headers.insert("Referrer-Policy", v);
+			}
 		}
 		if let Some(ref pp) = self.config.permissions_policy {
-			if let Ok(v) = pp.parse() { headers.insert("Permissions-Policy", v); }
+			if let Ok(v) = pp.parse() {
+				headers.insert("Permissions-Policy", v);
+			}
 		}
 		if let Some(dns) = self.config.x_dns_prefetch_control {
 			let value = if dns { "on" } else { "off" };
-			if let Ok(v) = value.parse() { headers.insert("X-DNS-Prefetch-Control", v); }
+			if let Ok(v) = value.parse() {
+				headers.insert("X-DNS-Prefetch-Control", v);
+			}
 		}
 		if let Some(ref cdp) = self.config.x_permitted_cross_domain_policies {
 			if let Ok(v) = cdp.as_str().parse() {
@@ -180,7 +194,9 @@ impl MurSecurityHeaders {
 			}
 		}
 		if self.config.x_download_options {
-			if let Ok(v) = "noopen".parse() { headers.insert("X-Download-Options", v); }
+			if let Ok(v) = "noopen".parse() {
+				headers.insert("X-Download-Options", v);
+			}
 		}
 		if let Some(ref coep) = self.config.cross_origin_embedder_policy {
 			if let Ok(v) = coep.as_str().parse() {
@@ -188,7 +204,9 @@ impl MurSecurityHeaders {
 			}
 		}
 		if let Some(ref coop) = self.config.cross_origin_opener_policy {
-			if let Ok(v) = coop.as_str().parse() { headers.insert("Cross-Origin-Opener-Policy", v); }
+			if let Ok(v) = coop.as_str().parse() {
+				headers.insert("Cross-Origin-Opener-Policy", v);
+			}
 		}
 		if let Some(ref corp) = self.config.cross_origin_resource_policy {
 			if let Ok(v) = corp.as_str().parse() {
@@ -196,7 +214,9 @@ impl MurSecurityHeaders {
 			}
 		}
 		if self.config.origin_agent_cluster {
-			if let Ok(v) = "?1".parse() { headers.insert("Origin-Agent-Cluster", v); }
+			if let Ok(v) = "?1".parse() {
+				headers.insert("Origin-Agent-Cluster", v);
+			}
 		}
 		for (name, value) in &self.config.custom_headers {
 			if let (Ok(n), Ok(v)) = (
@@ -253,13 +273,19 @@ impl MurMiddleware for MurSecurityHeaders {
 				}
 
 				if let Some(ref xfo) = config.x_frame_options {
-					if let Ok(v) = xfo.as_str().parse() { headers.insert("X-Frame-Options", v); }
+					if let Ok(v) = xfo.as_str().parse() {
+						headers.insert("X-Frame-Options", v);
+					}
 				}
 				if config.x_content_type_options {
-					if let Ok(v) = "nosniff".parse() { headers.insert("X-Content-Type-Options", v); }
+					if let Ok(v) = "nosniff".parse() {
+						headers.insert("X-Content-Type-Options", v);
+					}
 				}
 				if let Some(ref xss) = config.x_xss_protection {
-					if let Ok(v) = xss.as_str().parse() { headers.insert("X-XSS-Protection", v); }
+					if let Ok(v) = xss.as_str().parse() {
+						headers.insert("X-XSS-Protection", v);
+					}
 				}
 				if let Some(ref hsts) = config.hsts
 					&& let Ok(v) = hsts.to_header_value().parse()
@@ -267,7 +293,9 @@ impl MurMiddleware for MurSecurityHeaders {
 					headers.insert("Strict-Transport-Security", v);
 				}
 				if let Some(ref rp) = config.referrer_policy {
-					if let Ok(v) = rp.as_str().parse() { headers.insert("Referrer-Policy", v); }
+					if let Ok(v) = rp.as_str().parse() {
+						headers.insert("Referrer-Policy", v);
+					}
 				}
 				if let Some(ref pp) = config.permissions_policy
 					&& let Ok(v) = pp.parse()
@@ -276,7 +304,9 @@ impl MurMiddleware for MurSecurityHeaders {
 				}
 				if let Some(dns) = config.x_dns_prefetch_control {
 					let value = if dns { "on" } else { "off" };
-					if let Ok(v) = value.parse() { headers.insert("X-DNS-Prefetch-Control", v); }
+					if let Ok(v) = value.parse() {
+						headers.insert("X-DNS-Prefetch-Control", v);
+					}
 				}
 				if let Some(ref cdp) = config.x_permitted_cross_domain_policies {
 					if let Ok(v) = cdp.as_str().parse() {
@@ -284,7 +314,9 @@ impl MurMiddleware for MurSecurityHeaders {
 					}
 				}
 				if config.x_download_options {
-					if let Ok(v) = "noopen".parse() { headers.insert("X-Download-Options", v); }
+					if let Ok(v) = "noopen".parse() {
+						headers.insert("X-Download-Options", v);
+					}
 				}
 				if let Some(ref coep) = config.cross_origin_embedder_policy {
 					if let Ok(v) = coep.as_str().parse() {
@@ -292,7 +324,9 @@ impl MurMiddleware for MurSecurityHeaders {
 					}
 				}
 				if let Some(ref coop) = config.cross_origin_opener_policy {
-					if let Ok(v) = coop.as_str().parse() { headers.insert("Cross-Origin-Opener-Policy", v); }
+					if let Ok(v) = coop.as_str().parse() {
+						headers.insert("Cross-Origin-Opener-Policy", v);
+					}
 				}
 				if let Some(ref corp) = config.cross_origin_resource_policy {
 					if let Ok(v) = corp.as_str().parse() {
@@ -300,7 +334,9 @@ impl MurMiddleware for MurSecurityHeaders {
 					}
 				}
 				if config.origin_agent_cluster {
-					if let Ok(v) = "?1".parse() { headers.insert("Origin-Agent-Cluster", v); }
+					if let Ok(v) = "?1".parse() {
+						headers.insert("Origin-Agent-Cluster", v);
+					}
 				}
 
 				for (name, value) in &config.custom_headers {

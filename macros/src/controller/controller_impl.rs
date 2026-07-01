@@ -73,11 +73,15 @@ pub fn controller_impl(args: proc_macro::TokenStream, input: ItemImpl) -> TokenS
 
 			let (http_method, tokens_str) = match &attr.meta {
 				Meta::Path(p) => {
-					let Some(ident) = p.get_ident() else { continue; };
+					let Some(ident) = p.get_ident() else {
+						continue;
+					};
 					(ident.to_string(), String::new())
 				}
 				Meta::List(MetaList { path, tokens, .. }) => {
-					let Some(ident) = path.get_ident() else { continue; };
+					let Some(ident) = path.get_ident() else {
+						continue;
+					};
 					(ident.to_string(), tokens.to_string())
 				}
 				_ => continue,

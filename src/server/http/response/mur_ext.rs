@@ -29,15 +29,19 @@ impl MurResExt for MurRes {
 	}
 
 	fn created() -> MurRes {
-		MurRes::from(crate::server::http::response::builder::MurResponseBuilder::new()
-			.status(StatusCode::CREATED)
-			.empty())
+		MurRes::from(
+			crate::server::http::response::builder::MurResponseBuilder::new()
+				.status(StatusCode::CREATED)
+				.empty(),
+		)
 	}
 
 	fn accepted() -> MurRes {
-		MurRes::from(crate::server::http::response::builder::MurResponseBuilder::new()
-			.status(StatusCode::ACCEPTED)
-			.empty())
+		MurRes::from(
+			crate::server::http::response::builder::MurResponseBuilder::new()
+				.status(StatusCode::ACCEPTED)
+				.empty(),
+		)
 	}
 
 	fn no_content() -> MurRes {
@@ -65,9 +69,11 @@ impl MurResExt for MurRes {
 	}
 
 	fn status(status: StatusCode) -> MurRes {
-		MurRes::from(crate::server::http::response::builder::MurResponseBuilder::new()
-			.status(status)
-			.empty())
+		MurRes::from(
+			crate::server::http::response::builder::MurResponseBuilder::new()
+				.status(status)
+				.empty(),
+		)
 	}
 
 	fn json<T: Serialize>(body: T) -> MurRes {

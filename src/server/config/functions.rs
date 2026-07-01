@@ -35,7 +35,8 @@ fn dotenv() -> &'static HashMap<String, String> {
 				if let Some((key, raw)) = line.split_once('=') {
 					let key = key.trim().to_string();
 					if !key.is_empty() {
-						map.entry(key).or_insert_with(|| parse_dotenv_val(raw.trim()));
+						map.entry(key)
+							.or_insert_with(|| parse_dotenv_val(raw.trim()));
 					}
 				}
 			}

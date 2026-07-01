@@ -1,7 +1,7 @@
 use super::MurService;
+use crate::server::error::MurError;
 use crate::server::provider::MurProvider;
 use crate::server::provider::MurProviderScope;
-use crate::server::error::MurError;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -291,8 +291,8 @@ impl std::fmt::Debug for MurServiceContainer {
 
 #[cfg(test)]
 mod tests {
-	use std::any::Any;
 	use super::*;
+	use std::any::Any;
 
 	struct TestService {
 		value: i32,
@@ -366,7 +366,10 @@ mod tests {
 		assert_ne!(Arc::as_ptr(&a), Arc::as_ptr(&b));
 		assert_ne!(a.value, b.value);
 		assert!(container.has::<TestService>());
-		assert_eq!(container.scope_of::<TestService>(), Some(MurProviderScope::Transient));
+		assert_eq!(
+			container.scope_of::<TestService>(),
+			Some(MurProviderScope::Transient)
+		);
 	}
 
 	#[test]

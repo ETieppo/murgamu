@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::parse_macro_input;
 use syn::DeriveInput;
+use syn::parse_macro_input;
 
 pub fn derive_dto_impl(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
@@ -36,12 +36,10 @@ fn generate_entity_impl(input: &DeriveInput) -> TokenStream2 {
 	let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
 	let has_id_field = match &input.data {
-		syn::Data::Struct(data) => data.fields.iter().any(|f| {
-			f.ident
-				.as_ref()
-				.map(|i| i == "id")
-				.unwrap_or(false)
-		}),
+		syn::Data::Struct(data) => data
+			.fields
+			.iter()
+			.any(|f| f.ident.as_ref().map(|i| i == "id").unwrap_or(false)),
 		_ => false,
 	};
 
