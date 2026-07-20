@@ -979,7 +979,7 @@ dependencies = [
 
 [[package]]
 name = "mur"
-version = "0.8.18"
+version = "0.8.19"
 dependencies = [
  "clap",
  "cliclack",
@@ -988,7 +988,7 @@ dependencies = [
 
 [[package]]
 name = "murgamu"
-version = "0.8.18"
+version = "0.8.19"
 dependencies = [
  "base64",
  "chrono",
